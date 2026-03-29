@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Noxera — AI Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@300;400;500;600;700&family=General+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root {
+  --bg:#02040a;--bg2:#040810;--bg3:#060c18;--bg4:#0a1220;--bg5:#0e1a2e;--bg6:#132038;
+  --blue:#4f8ef7;--blue2:#7ab3ff;--blue3:#a8d0ff;--cyan:#00d4ff;--cyan2:#80eaff;
+  --purple:#6c5ce7;--pink:#fd79a8;
+  --bdim:rgba(79,142,247,.12);--cdim:rgba(0,212,255,.1);--pglow:rgba(79,142,247,.06);
+  --white:#f0f6ff;--w2:#b8cde8;--w3:#6e8bb0;--w4:#2e4060;
+  --green:#00cec9;--red:#e17055;--amber:#fdcb6e;
+  --border:rgba(79,142,247,.1);--border2:rgba(79,142,247,.18);--border3:rgba(0,212,255,.25);
+  --serif:'Clash Display',sans-serif;--sans:'General Sans',sans-serif;
+  --r:12px;--r2:18px;--r3:26px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--white);line-height:1.65;overflow-x:hidden;cursor:default}
+
+/* ── CUSTOM CURSOR ── */
+.cursor{width:12px;height:12px;background:var(--cyan);border-radius:50%;position:fixed;pointer-events:none;z-index:99999;transition:transform .15s;mix-blend-mode:screen;box-shadow:0 0 16px var(--cyan)}
+.cursor-ring{width:36px;height:36px;border:1px solid rgba(0,212,255,.4);border-radius:50%;position:fixed;pointer-events:none;z-index:99998;transition:all .12s;transform:translate(-50%,-50%)}
+
+/* ── SCANLINE ── */
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:9998}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 52px;background:rgba(2,4,10,.75);backdrop-filter:blur(32px);border-bottom:1px solid var(--border)}
+nav::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;background:linear-gradient(to right,transparent,var(--cyan),transparent);opacity:.3}
+.logo{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+.logo-cube{width:32px;height:32px;position:relative;transform-style:preserve-3d;animation:rotateCube 8s linear infinite}
+.logo-cube-face{position:absolute;width:32px;height:32px;border:1px solid var(--cyan);background:rgba(0,212,255,.05);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:14px;font-weight:600;color:var(--cyan)}
+.logo-cube-face.front{transform:translateZ(16px)}
+.logo-cube-face.back{transform:rotateY(180deg) translateZ(16px)}
+.logo-cube-face.left{transform:rotateY(-90deg) translateZ(16px)}
+.logo-cube-face.right{transform:rotateY(90deg) translateZ(16px)}
+.logo-cube-face.top{transform:rotateX(90deg) translateZ(16px)}
+.logo-cube-face.bottom{transform:rotateX(-90deg) translateZ(16px)}
+@keyframes rotateCube{from{transform:rotateX(0) rotateY(0)}to{transform:rotateX(360deg) rotateY(360deg)}}
+.logo-text{font-family:var(--serif);font-size:20px;font-weight:600;letter-spacing:3px;color:var(--white);text-transform:uppercase}
+.nav-links{display:flex;gap:34px;list-style:none}
+.nav-links a{font-size:12px;font-weight:400;letter-spacing:1.2px;color:var(--w3);text-decoration:none;text-transform:uppercase;transition:color .2s;cursor:pointer;position:relative}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:1px;background:var(--cyan);transform:scaleX(0);transition:transform .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--cyan)}
+.nav-links a:hover::after,.nav-links a.active::after{transform:scaleX(1)}
+.nav-right{display:flex;gap:10px;align-items:center}
+
+/* ── BUTTONS ── */
+.btn{font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:11px 24px;border-radius:var(--r);border:none;cursor:pointer;transition:all .22s;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.btn-ghost{background:transparent;color:var(--w3);border:1px solid var(--border2)}
+.btn-ghost:hover{color:var(--white);border-color:var(--border3);background:var(--bdim)}
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;box-shadow:0 0 30px rgba(79,142,247,.3)}
+.btn-primary:hover{box-shadow:0 0 50px rgba(79,142,247,.5);transform:translateY(-2px)}
+.btn-cyan{background:transparent;color:var(--cyan);border:1px solid var(--border3);box-shadow:0 0 12px rgba(0,212,255,.1)}
+.btn-cyan:hover{background:var(--cdim);box-shadow:0 0 24px rgba(0,212,255,.25);transform:translateY(-1px)}
+.btn-lg{font-size:14px;padding:14px 36px;border-radius:14px}
+.btn-full{width:100%;justify-content:center}
+.btn-sm{padding:7px 16px;font-size:11px}
+.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(225,112,85,.3)}
+.btn-danger:hover{background:rgba(225,112,85,.1)}
+
+/* ── PAGES ── */
+.page{display:none;min-height:100vh;padding-top:64px;position:relative;z-index:1}
+.page.active{display:block}
+.page-wrap{padding:48px 56px 80px;max-width:1200px;margin:0 auto}
+.page-head{margin-bottom:36px}
+.page-eyebrow{font-size:11px;color:var(--cyan);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px}
+.page-title{font-family:var(--serif);font-size:clamp(32px,4vw,48px);font-weight:600;color:var(--white);margin-bottom:6px;letter-spacing:-1px}
+.page-sub{font-size:14px;font-weight:300;color:var(--w3)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:26px;right:26px;z-index:9999;background:var(--bg4);border:1px solid var(--border3);border-radius:var(--r2);padding:14px 20px;font-size:13px;color:var(--w2);display:flex;align-items:center;gap:10px;transform:translateY(70px);opacity:0;transition:all .3s;pointer-events:none;max-width:360px;box-shadow:0 0 40px rgba(0,212,255,.1)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-ico{color:var(--cyan);font-size:15px;flex-shrink:0}
+
+/* ── MODALS ── */
+.overlay{position:fixed;inset:0;background:rgba(2,4,10,.92);backdrop-filter:blur(16px);z-index:3000;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:linear-gradient(160deg,var(--bg4),var(--bg3));border:1px solid var(--border2);border-radius:var(--r3);padding:40px;width:100%;max-width:480px;position:relative;animation:mup .3s ease;box-shadow:0 0 80px rgba(79,142,247,.15)}
+.modal.wide{max-width:740px}
+.modal.xl{max-width:1000px;max-height:90vh;overflow-y:auto}
+@keyframes mup{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
+.modal-x{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--w3);font-size:22px;cursor:pointer;line-height:1;transition:color .2s}
+.modal-x:hover{color:var(--white)}
+.modal-title{font-family:var(--serif);font-size:28px;font-weight:600;color:var(--white);margin-bottom:4px;letter-spacing:-.5px}
+.modal-sub{font-size:13px;font-weight:300;color:var(--w3);margin-bottom:24px}
+.cyan-line{width:100%;height:1px;background:linear-gradient(to right,transparent,var(--cyan),transparent);opacity:.3;margin:20px 0}
+
+/* ── FORMS ── */
+.fg{display:flex;flex-direction:column;gap:7px;margin-bottom:16px}
+.fl{font-size:11px;color:var(--w4);text-transform:uppercase;letter-spacing:1.1px}
+.fi{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:12px 15px;color:var(--white);font-family:var(--sans);font-size:14px;outline:none;transition:border-color .2s;width:100%}
+.fi:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.08)}
+.fi::placeholder{color:var(--w4)}
+select.fi{cursor:pointer}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* ══════════════════════════
+   PAGE: HOME — 3D HERO
+══════════════════════════ */
+#hero-canvas{position:absolute;inset:0;pointer-events:none}
+.hero{min-height:calc(100vh - 64px);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px 48px 60px;overflow:hidden}
+.hero-hud{position:absolute;top:20px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;opacity:.4}
+.hud-corner{font-size:9px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;font-family:monospace}
+.hero-content{position:relative;z-index:2}
+.hero-badge{display:inline-flex;align-items:center;gap:9px;background:rgba(0,212,255,.07);border:1px solid var(--border3);color:var(--cyan);font-size:11px;padding:7px 18px;border-radius:100px;margin-bottom:36px;letter-spacing:1.5px;text-transform:uppercase}
+.badge-pulse{width:6px;height:6px;background:var(--cyan);border-radius:50%;animation:bpulse 2s infinite;box-shadow:0 0 8px var(--cyan)}
+@keyframes bpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.hero h1{font-family:var(--serif);font-size:clamp(52px,8.5vw,115px);font-weight:700;line-height:.95;letter-spacing:-3px;color:var(--white);margin-bottom:10px}
+.hero h1 .glow-word{background:linear-gradient(135deg,var(--blue2) 0%,var(--cyan) 50%,var(--blue3) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 30px rgba(0,212,255,.4))}
+.hero h1 .sub-line{display:block;font-size:clamp(14px,2vw,22px);font-weight:300;letter-spacing:8px;color:var(--w3);margin-top:16px;font-family:var(--sans);-webkit-text-fill-color:var(--w3)}
+.hero-p{font-size:17px;font-weight:300;color:var(--w3);max-width:560px;margin:28px auto 48px;line-height:1.8}
+.hero-p b{color:var(--blue3);font-weight:500}
+.hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:70px}
+
+/* FLOATING 3D CARDS */
+.float-cards{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;position:relative;z-index:2}
+.fcard{background:linear-gradient(145deg,rgba(13,26,56,.9),rgba(6,12,24,.95));border:1px solid var(--border2);border-radius:var(--r2);padding:18px 22px;backdrop-filter:blur(20px);min-width:160px;text-align:center;transform-style:preserve-3d;animation:floatCard 4s ease-in-out infinite;box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px rgba(79,142,247,.1),inset 0 1px 0 rgba(255,255,255,.05)}
+.fcard:nth-child(2){animation-delay:.6s}
+.fcard:nth-child(3){animation-delay:1.2s}
+.fcard:nth-child(4){animation-delay:1.8s}
+@keyframes floatCard{0%,100%{transform:translateY(0) rotateX(0) rotateY(0)}50%{transform:translateY(-8px) rotateX(2deg) rotateY(1deg)}}
+.fcard-icon{font-size:26px;margin-bottom:8px}
+.fcard-val{font-family:var(--serif);font-size:26px;font-weight:700;color:var(--white);letter-spacing:-1px}
+.fcard-val b{color:var(--cyan)}
+.fcard-lbl{font-size:10px;color:var(--w4);text-transform:uppercase;letter-spacing:1.2px;margin-top:3px}
+
+/* TICKER */
+.ticker-strip{position:relative;overflow:hidden;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 0;background:rgba(4,8,16,.5);margin-top:60px}
+.ticker-strip::before,.ticker-strip::after{content:'';position:absolute;top:0;bottom:0;width:100px;z-index:2;pointer-events:none}
+.ticker-strip::before{left:0;background:linear-gradient(to right,var(--bg),transparent)}
+.ticker-strip::after{right:0;background:linear-gradient(to left,var(--bg),transparent)}
+.ticker-inner{display:flex;animation:tick 28s linear infinite;width:max-content;gap:0}
+.tick-item{display:flex;align-items:center;gap:7px;padding:0 24px;font-size:11px;color:var(--w4);letter-spacing:1.2px;text-transform:uppercase;white-space:nowrap}
+.tick-sep{color:var(--cyan);opacity:.5}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* FEATURES */
+.feat-section{padding:88px 56px;max-width:1200px;margin:0 auto}
+.s-eyebrow{font-size:11px;color:var(--cyan);letter-spacing:3px;text-transform:uppercase;margin-bottom:12px}
+.s-title{font-family:var(--serif);font-size:clamp(28px,3.5vw,44px);font-weight:700;color:var(--white);margin-bottom:10px;letter-spacing:-1px}
+.s-sub{font-size:15px;font-weight:300;color:var(--w3);max-width:480px;margin-bottom:52px}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--border);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
+.feat-card{background:var(--bg3);padding:36px 28px;transition:background .25s,transform .25s;cursor:pointer;position:relative;overflow:hidden}
+.feat-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(0,212,255,.06),transparent 70%);opacity:0;transition:opacity .3s}
+.feat-card:hover{background:var(--bg4)}
+.feat-card:hover::before{opacity:1}
+.feat-ico{width:48px;height:48px;border-radius:12px;background:var(--bdim);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:18px;transition:box-shadow .3s}
+.feat-card:hover .feat-ico{box-shadow:0 0 24px rgba(0,212,255,.2)}
+.feat-name{font-family:var(--serif);font-size:20px;font-weight:600;color:var(--white);margin-bottom:8px}
+.feat-desc{font-size:13px;font-weight:300;color:var(--w3);line-height:1.68}
+.feat-link{display:inline-flex;align-items:center;gap:6px;color:var(--cyan);font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-top:16px;transition:gap .2s}
+.feat-card:hover .feat-link{gap:10px}
+
+/* STEPS */
+.steps-section{padding:80px 56px;max-width:1200px;margin:0 auto}
+.steps-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative}
+.steps-row::before{content:'';position:absolute;top:26px;left:8%;right:8%;height:1px;background:linear-gradient(to right,transparent,rgba(0,212,255,.3) 20%,rgba(0,212,255,.3) 80%,transparent)}
+.step-card{text-align:center;padding:0 20px;position:relative}
+.step-num{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:20px;font-weight:700;color:#fff;margin:0 auto 16px;box-shadow:0 0 30px rgba(79,142,247,.3);position:relative;z-index:1}
+.step-title{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--white);margin-bottom:8px}
+.step-desc{font-size:12px;font-weight:300;color:var(--w3);line-height:1.65}
+
+/* FOOTER */
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:52px 56px 26px;position:relative;z-index:1}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:36px}
+.f-logo{font-family:var(--serif);font-size:20px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--white);margin-bottom:10px}
+.f-desc{font-size:13px;font-weight:300;color:var(--w4);line-height:1.7;max-width:240px}
+.f-col h5{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:2px;color:var(--w3);margin-bottom:14px}
+.f-col a{display:block;font-size:13px;font-weight:300;color:var(--w4);text-decoration:none;margin-bottom:8px;transition:color .2s;cursor:pointer}
+.f-col a:hover{color:var(--blue3)}
+.footer-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:20px;border-top:1px solid var(--border)}
+.footer-bottom p{font-size:11px;color:var(--w4)}
+
+/* ══════════════════════════
+   PAGE: WALLET — APPLE STYLE
+══════════════════════════ */
+.wallet-hero{background:linear-gradient(160deg,var(--bg4) 0%,var(--bg2) 100%);border-radius:var(--r3);border:1px solid var(--border2);padding:36px;margin-bottom:28px;position:relative;overflow:hidden}
+.wallet-hero::before{content:'';position:absolute;top:-80px;right:-80px;width:300px;height:300px;background:radial-gradient(circle,rgba(79,142,247,.15),transparent 70%);pointer-events:none}
+.wallet-hero::after{content:'';position:absolute;bottom:-60px;left:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(0,212,255,.08),transparent 70%);pointer-events:none}
+.wh-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px}
+.wh-label{font-size:12px;color:var(--w3);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
+.wh-total{font-family:var(--serif);font-size:56px;font-weight:700;color:var(--white);letter-spacing:-3px;line-height:1}
+.wh-total small{font-size:24px;color:var(--w3);font-weight:300;font-family:var(--sans)}
+.wh-saving{display:inline-flex;align-items:center;gap:7px;background:rgba(0,206,201,.1);border:1px solid rgba(0,206,201,.25);color:var(--green);font-size:12px;padding:5px 14px;border-radius:100px;margin-top:10px}
+.wh-stats{display:flex;gap:32px}
+.whs{text-align:center}
+.whs-val{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--white)}
+.whs-val.cyan{color:var(--cyan)}
+.whs-lbl{font-size:10px;color:var(--w4);text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+
+/* SUBS — APPLE WALLET STYLE */
+.subs-stack{position:relative;margin-bottom:32px}
+.subs-stack-label{font-size:12px;color:var(--w3);text-transform:uppercase;letter-spacing:2px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center}
+.subs-stack-label span{color:var(--cyan);cursor:pointer;font-size:11px}
+.sub-cards-wrap{display:flex;flex-direction:column;gap:12px}
+
+/* APPLE WALLET CARD */
+.sub-wallet-card{border-radius:var(--r2);padding:22px 24px;position:relative;overflow:hidden;cursor:pointer;transition:transform .25s,box-shadow .25s;transform-style:preserve-3d}
+.sub-wallet-card:hover{transform:translateY(-3px) scale(1.01);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.sub-wallet-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.07) 0%,transparent 50%);pointer-events:none}
+.swc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.swc-brand{display:flex;align-items:center;gap:12px}
+.swc-ico{width:42px;height:42px;border-radius:10px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:20px;backdrop-filter:blur(10px)}
+.swc-name{font-family:var(--serif);font-size:18px;font-weight:600;color:#fff}
+.swc-plan{font-size:11px;opacity:.7;margin-top:1px}
+.swc-price{text-align:right}
+.swc-amount{font-family:var(--serif);font-size:22px;font-weight:700;color:#fff}
+.swc-cycle{font-size:10px;opacity:.6;margin-top:1px}
+.swc-bottom{display:flex;justify-content:space-between;align-items:flex-end}
+.swc-renew{font-size:11px;opacity:.65}
+.swc-disc{background:rgba(255,255,255,.15);backdrop-filter:blur(10px);padding:4px 10px;border-radius:100px;font-size:10px;font-weight:600;letter-spacing:.5px;color:#fff}
+.swc-actions{display:flex;gap:6px;margin-top:14px}
+.swc-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:5px 12px;cursor:pointer;transition:background .2s;font-family:var(--sans)}
+.swc-btn:hover{background:rgba(255,255,255,.2)}
+.swc-btn.del{color:rgba(255,100,80,1);border-color:rgba(255,100,80,.3)}
+.swc-btn.del:hover{background:rgba(255,100,80,.2)}
+
+/* WALLET SIDEBAR */
+.wallet-layout{display:grid;grid-template-columns:1fr 310px;gap:22px}
+.w-panel{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
+.wp-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.wp-title{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--white)}
+.wp-act{font-size:11px;color:var(--cyan);cursor:pointer;text-transform:uppercase;letter-spacing:.8px}
+.ws-col{display:flex;flex-direction:column;gap:14px}
+.sc{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:20px}
+.sc-title{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:14px}
+.bars{display:flex;gap:5px;align-items:flex-end;height:56px;margin-bottom:8px}
+.bar{flex:1;background:var(--bg5);border-radius:4px 4px 0 0;transition:background .2s;cursor:pointer;position:relative}
+.bar:hover,.bar.on{background:linear-gradient(to top,var(--blue),var(--cyan))}
+.bar-lbls{display:flex;gap:5px}
+.bar-lbls span{flex:1;text-align:center;font-size:9px;color:var(--w4);text-transform:uppercase}
+.ren-list{display:flex;flex-direction:column;gap:10px}
+.ren-item{display:flex;justify-content:space-between;align-items:center}
+.ren-left{display:flex;align-items:center;gap:9px}
+.ren-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+.ren-name{font-size:13px;color:var(--w2)}
+.ren-date{font-size:10px;color:var(--w4)}
+.ren-amt{font-size:13px;font-weight:600;color:var(--white)}
+.tip-box{background:linear-gradient(135deg,var(--bdim),rgba(0,212,255,.05));border:1px solid var(--border3);border-radius:var(--r2);padding:20px;box-shadow:0 0 30px rgba(0,212,255,.05)}
+.tip-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--cyan);margin-bottom:8px}
+.tip-text{font-size:13px;font-weight:300;color:var(--w3);line-height:1.55;margin-bottom:14px}
+
+/* ══════════════════════════
+   PAGE: DIRECTORY
+══════════════════════════ */
+.dir-search-bar{display:flex;gap:12px;margin-bottom:24px;align-items:center;flex-wrap:wrap}
+.dir-search{flex:1;min-width:200px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:11px 16px 11px 40px;color:var(--white);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .2s;position:relative}
+.dir-search:focus{border-color:var(--cyan)}
+.dir-search::placeholder{color:var(--w4)}
+.search-wrap{flex:1;min-width:200px;position:relative}
+.search-wrap::before{content:'⌕';position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--w4);font-size:16px;pointer-events:none}
+.filter-pills{display:flex;gap:7px;flex-wrap:wrap}
+.fpill{background:transparent;border:1px solid var(--border2);color:var(--w3);font-family:var(--sans);font-size:11px;letter-spacing:.8px;text-transform:uppercase;padding:7px 16px;border-radius:100px;cursor:pointer;transition:all .2s}
+.fpill:hover,.fpill.on{background:linear-gradient(135deg,var(--blue),var(--purple));border-color:transparent;color:#fff;box-shadow:0 0 20px rgba(79,142,247,.3)}
+
+/* COMPARE BAR */
+.compare-bar{background:var(--bg4);border:1px solid var(--border3);border-radius:var(--r2);padding:12px 18px;display:none;align-items:center;gap:14px;margin-bottom:20px;box-shadow:0 0 20px rgba(0,212,255,.07)}
+.compare-bar.show{display:flex}
+.cslot{height:30px;min-width:100px;border:1px dashed var(--border3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--w4)}
+.cslot.filled{background:var(--bdim);border-color:var(--blue);color:var(--blue3)}
+
+/* AI CARD */
+.ai-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.ai-card{background:linear-gradient(145deg,var(--bg3),var(--bg2));border:1px solid var(--border);border-radius:var(--r2);padding:22px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden}
+.ai-card::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(79,142,247,.04),transparent 60%);opacity:0;transition:opacity .3s;pointer-events:none}
+.ai-card:hover{border-color:var(--border3);transform:translateY(-3px);box-shadow:0 20px 60px rgba(0,0,0,.4),0 0 0 1px rgba(0,212,255,.1)}
+.ai-card:hover::after{opacity:1}
+.aic-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:13px}
+.aic-ico{width:44px;height:44px;border-radius:11px;background:var(--bg5);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:21px}
+.aic-badges{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.badge{font-size:10px;padding:3px 9px;border-radius:100px;font-weight:600;letter-spacing:.5px}
+.badge-hot{background:rgba(225,112,85,.12);color:var(--red);border:1px solid rgba(225,112,85,.3)}
+.badge-new{background:rgba(108,92,231,.12);color:#a29bfe;border:1px solid rgba(108,92,231,.3)}
+.badge-free{background:rgba(0,206,201,.1);color:var(--green);border:1px solid rgba(0,206,201,.25)}
+.badge-blue{background:var(--bdim);color:var(--blue3);border:1px solid var(--border2)}
+.aic-name{font-family:var(--serif);font-size:19px;font-weight:700;color:var(--white)}
+.aic-cat{font-size:10px;color:var(--w4);text-transform:uppercase;letter-spacing:1px;margin-top:2px;margin-bottom:10px}
+.aic-desc{font-size:12px;font-weight:300;color:var(--w3);line-height:1.55;margin-bottom:12px}
+.aic-pc{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:11px}
+.pc{font-size:11px;color:var(--w3);display:flex;gap:5px;align-items:flex-start}
+.pc.pro .ps{color:var(--green)}.pc.con .ps{color:var(--red)}
+.ps{flex-shrink:0;font-size:10px;margin-top:2px}
+.aic-foot{display:flex;justify-content:space-between;align-items:center;padding-top:11px;border-top:1px solid var(--border)}
+.stars{color:var(--amber);font-size:11px}
+.score{font-size:13px;font-weight:700;color:var(--white);margin-left:4px}
+.aic-price{font-size:12px;color:var(--w3)}
+.aic-price b{color:var(--blue3)}
+.aic-btns{display:flex;gap:6px;margin-top:10px}
+.acb{flex:1;padding:7px 0;border-radius:8px;font-family:var(--sans);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;text-align:center;border:1px solid var(--border2);background:transparent;color:var(--w3);letter-spacing:.5px;text-transform:uppercase}
+.acb:hover{background:var(--bg5);color:var(--white)}
+.acb.add{border-color:var(--border3);color:var(--cyan)}
+.acb.add:hover{background:var(--cdim)}
+.acb.cmp.sel{border-color:var(--border2);color:var(--blue3);background:var(--bdim)}
+
+/* DETAIL MODAL */
+.detail-head{display:flex;gap:20px;margin-bottom:22px}
+.d-ico{width:64px;height:64px;border-radius:14px;background:var(--bg5);display:flex;align-items:center;justify-content:center;font-size:30px;border:1px solid var(--border3);box-shadow:0 0 30px rgba(0,212,255,.1)}
+.d-name{font-family:var(--serif);font-size:30px;font-weight:700;color:var(--white);margin-bottom:3px;letter-spacing:-.5px}
+.d-cat{font-size:11px;color:var(--w4);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
+.d-body{display:grid;grid-template-columns:1fr 240px;gap:22px}
+.d-desc{font-size:14px;font-weight:300;color:var(--w2);line-height:1.75;margin-bottom:16px}
+.d-sec-title{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--white);margin:16px 0 10px}
+.d-feats{display:flex;flex-direction:column;gap:7px}
+.d-feat{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--w3)}
+.d-feat::before{content:'→';color:var(--cyan);flex-shrink:0}
+.d-pc-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:4px}
+.d-pc{background:var(--bg4);border-radius:9px;padding:9px 12px;font-size:12px}
+.d-pc.pro{border:1px solid rgba(0,206,201,.2);color:var(--green)}
+.d-pc.con{border:1px solid rgba(225,112,85,.2);color:var(--red)}
+.d-price-card{background:var(--bg4);border:1px solid var(--border3);border-radius:var(--r2);padding:22px;margin-bottom:12px;box-shadow:0 0 24px rgba(0,212,255,.06)}
+.dp-lbl{font-size:10px;color:var(--w4);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.dp-price{font-family:var(--serif);font-size:28px;font-weight:700;color:var(--white)}
+.dp-noxera{font-size:12px;color:var(--green);margin-top:4px}
+
+/* COMPARE */
+.cmp-grid{display:grid;gap:14px}
+.cmp-head{text-align:center;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.cmp-ico{font-size:26px;margin-bottom:5px}
+.cmp-name{font-family:var(--serif);font-size:18px;font-weight:700;color:var(--white)}
+.cmp-score{color:var(--amber);font-size:12px;margin-top:4px}
+.cmp-table{width:100%;border-collapse:collapse;margin-top:18px}
+.cmp-table tr{border-bottom:1px solid var(--border)}
+.cmp-table td{padding:11px 8px;font-size:13px;vertical-align:top}
+.cmp-table td:first-child{color:var(--w4);font-size:11px;text-transform:uppercase;letter-spacing:.8px;width:120px}
+.cmp-table td:not(:first-child){color:var(--w2);text-align:center}
+.cmp-table .winner{color:var(--cyan);font-weight:700}
+
+/* ══════════════════════════
+   PAGE: ADVISOR
+══════════════════════════ */
+.adv-wrap{padding:40px 56px 80px;max-width:900px;margin:0 auto}
+.adv-card{background:linear-gradient(135deg,var(--bdim),rgba(0,212,255,.04));border:1px solid var(--border3);border-radius:var(--r3);padding:28px;margin-bottom:22px;display:flex;align-items:center;gap:22px;box-shadow:0 0 50px rgba(79,142,247,.08)}
+.adv-av{width:60px;height:60px;border-radius:14px;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;border:1px solid var(--border2);box-shadow:0 0 30px rgba(79,142,247,.3)}
+.adv-name{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--white);letter-spacing:-.5px}
+.adv-online{font-size:12px;color:var(--green);display:flex;align-items:center;gap:6px;margin-top:4px}
+.adv-dot{width:6px;height:6px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green);animation:bpulse 2s infinite}
+.adv-desc{font-size:13px;font-weight:300;color:var(--w3);margin-top:5px;line-height:1.6}
+.chat-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r3);overflow:hidden;box-shadow:0 0 60px rgba(0,0,0,.3)}
+.chat-msgs{padding:26px;min-height:300px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.chat-msgs::-webkit-scrollbar{width:3px}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.cmsg{display:flex;gap:11px;animation:mup .3s ease}
+.cmsg.user{flex-direction:row-reverse;align-self:flex-end;max-width:76%}
+.cmsg.ai{max-width:84%}
+.cmsg-av{width:32px;height:32px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px}
+.cmsg-av.ai{background:linear-gradient(135deg,var(--blue),var(--purple))}
+.cmsg-av.user{background:var(--bg5);border:1px solid var(--border2)}
+.cmsg-bub{padding:11px 15px;border-radius:12px;font-size:13px;font-weight:300;line-height:1.65}
+.cmsg.ai .cmsg-bub{background:var(--bg4);border:1px solid var(--border);border-bottom-left-radius:3px;color:var(--w2)}
+.cmsg.user .cmsg-bub{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;font-weight:500;border-bottom-right-radius:3px}
+.cmsg.ai .cmsg-bub strong{color:var(--cyan);font-weight:500}
+.chat-chips{display:flex;flex-wrap:wrap;gap:7px;padding:14px 26px;border-top:1px solid var(--border)}
+.chip{background:transparent;border:1px solid var(--border2);color:var(--w3);font-family:var(--sans);font-size:11px;padding:7px 14px;border-radius:100px;cursor:pointer;transition:all .2s}
+.chip:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cdim)}
+.chat-foot{display:flex;gap:9px;padding:14px 18px;border-top:1px solid var(--border);background:var(--bg4)}
+.chat-inp{flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:12px 15px;color:var(--white);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .2s}
+.chat-inp:focus{border-color:var(--cyan)}
+.chat-inp::placeholder{color:var(--w4)}
+.chat-send{background:linear-gradient(135deg,var(--blue),var(--purple));border:none;border-radius:var(--r);width:46px;height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:18px;transition:opacity .2s;flex-shrink:0;box-shadow:0 0 20px rgba(79,142,247,.3)}
+.chat-send:hover{opacity:.85}
+.typing{display:flex;gap:4px;align-items:center;padding:4px 0}
+.typing span{width:6px;height:6px;background:var(--w4);border-radius:50%;animation:tdot 1.2s ease-in-out infinite}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes tdot{0%,80%,100%{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:1}}
+
+/* ══════════════════════════
+   PAGE: INSURANCE
+══════════════════════════ */
+.plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:48px}
+.plan-card{background:linear-gradient(145deg,var(--bg3),var(--bg2));border:1px solid var(--border);border-radius:var(--r3);padding:32px 26px;display:flex;flex-direction:column;position:relative;overflow:hidden;transition:transform .25s}
+.plan-card:hover{transform:translateY(-4px)}
+.plan-card.feat{border-color:var(--border3);box-shadow:0 0 60px rgba(0,212,255,.08)}
+.plan-card.feat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,var(--cyan),transparent)}
+.plan-badge{position:absolute;top:14px;right:14px}
+.plan-ico{font-size:28px;margin-bottom:14px}
+.plan-name{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--white);margin-bottom:5px}
+.plan-price{font-family:var(--serif);font-size:34px;font-weight:700;color:var(--cyan);letter-spacing:-1px}
+.plan-price span{font-size:14px;color:var(--w3);font-weight:300;font-family:var(--sans)}
+.plan-desc{font-size:13px;font-weight:300;color:var(--w3);margin:10px 0 16px;line-height:1.6}
+.plan-feats{list-style:none;flex:1;display:flex;flex-direction:column;gap:8px;margin-bottom:22px}
+.plan-feats li{font-size:13px;color:var(--w3);display:flex;gap:8px;align-items:flex-start}
+.plan-feats li::before{content:'→';color:var(--cyan);flex-shrink:0}
+.plan-btn{width:100%;padding:13px;border-radius:var(--r);font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;border:1px solid var(--border2);background:transparent;color:var(--w2)}
+.plan-btn:hover{background:var(--bg5);color:var(--white)}
+.plan-card.feat .plan-btn{background:linear-gradient(135deg,var(--blue),var(--cyan));border-color:transparent;color:#fff;box-shadow:0 0 30px rgba(0,212,255,.2)}
+.plan-card.feat .plan-btn:hover{box-shadow:0 0 50px rgba(0,212,255,.35);transform:translateY(-1px)}
+.ctable{width:100%;border-collapse:collapse}
+.ctable th,.ctable td{padding:13px 16px;text-align:left;border-bottom:1px solid var(--border);font-size:12px}
+.ctable th{color:var(--w4);font-weight:400;text-transform:uppercase;letter-spacing:1px;font-size:10px;background:var(--bg3)}
+.ctable td:first-child{color:var(--w2)}
+.ctable td:not(:first-child){text-align:center}
+.ctable .chk{color:var(--green)}.ctable .x{color:var(--w4)}.ctable .val{color:var(--cyan);font-weight:600}
+.ctable tr:hover td{background:var(--bg3)}
+
+/* ══════════════════════════
+   PAGE: AUTH
+══════════════════════════ */
+.auth-tabs{display:flex;background:var(--bg2);border-radius:var(--r);padding:4px;gap:4px;margin-bottom:24px;border:1px solid var(--border)}
+.auth-tab{flex:1;padding:9px;background:transparent;border:none;color:var(--w3);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;border-radius:8px}
+.auth-tab.on{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;box-shadow:0 0 20px rgba(79,142,247,.25)}
+.social-btns{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.social-btn{width:100%;padding:12px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg4);color:var(--w2);font-family:var(--sans);font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:500}
+.social-btn:hover{border-color:var(--border3);background:var(--bg5);color:var(--white)}
+.auth-or{display:flex;align-items:center;gap:12px;margin:16px 0}
+.auth-or::before,.auth-or::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-or span{font-size:11px;color:var(--w4)}
+.forgot{font-size:12px;color:var(--cyan);cursor:pointer;text-align:right;display:block;margin-top:-8px;margin-bottom:14px}
+.forgot:hover{color:var(--blue3)}
+
+/* ══════════════════════════
+   PAGE: ACCOUNT
+══════════════════════════ */
+.acc-layout{display:grid;grid-template-columns:240px 1fr;gap:22px}
+.acc-side{display:flex;flex-direction:column;gap:12px}
+.acc-profile-card{background:linear-gradient(145deg,var(--bg4),var(--bg3));border:1px solid var(--border3);border-radius:var(--r2);padding:24px;text-align:center;box-shadow:0 0 40px rgba(79,142,247,.06)}
+.acc-av{width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;border:2px solid var(--border3);box-shadow:0 0 30px rgba(79,142,247,.25)}
+.acc-uname{font-family:var(--serif);font-size:18px;font-weight:700;color:var(--white)}
+.acc-email{font-size:11px;color:var(--w4);margin-top:3px}
+.acc-plan-tag{display:inline-flex;align-items:center;gap:5px;background:var(--bdim);border:1px solid var(--border2);color:var(--blue3);font-size:10px;padding:4px 12px;border-radius:100px;margin-top:10px}
+.acc-menu{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
+.acc-mi{display:flex;align-items:center;gap:11px;padding:13px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--w3);cursor:pointer;transition:all .2s}
+.acc-mi:last-child{border-bottom:none}
+.acc-mi:hover,.acc-mi.on{background:var(--bg4);color:var(--cyan)}
+.acc-mi .ico{font-size:15px}
+.acc-main{display:flex;flex-direction:column;gap:18px}
+.acc-sec{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:22px}
+.acc-sec-title{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--white);margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.tgl-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border)}
+.tgl-row:last-child{border-bottom:none}
+.tgl-lbl{font-size:13px;color:var(--w2)}
+.tgl-sub{font-size:11px;color:var(--w4);margin-top:2px}
+.tgl{width:42px;height:22px;background:var(--bg5);border-radius:11px;position:relative;cursor:pointer;border:1px solid var(--border2);transition:all .25s;flex-shrink:0}
+.tgl.on{background:linear-gradient(135deg,var(--blue),var(--cyan));border-color:transparent;box-shadow:0 0 12px rgba(79,142,247,.3)}
+.tgl::after{content:'';width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.tgl.on::after{transform:translateX(20px)}
+
+/* PAYMENT MODAL */
+.pay-tabs{display:flex;background:var(--bg2);border-radius:var(--r);padding:4px;gap:4px;margin-bottom:20px;border:1px solid var(--border)}
+.pay-tab{flex:1;padding:9px;background:transparent;border:none;color:var(--w3);font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;border-radius:8px;text-transform:uppercase;letter-spacing:.8px}
+.pay-tab.on{background:var(--bg5);color:var(--white);border-bottom:2px solid var(--cyan)}
+.pay-sec{display:none}
+.pay-sec.on{display:block}
+.plan-summary{background:var(--bg4);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:20px;box-shadow:0 0 20px rgba(0,0,0,.2)}
+.ps-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:var(--w3)}
+.ps-row.total{border-top:1px solid var(--border);padding-top:10px;margin-top:6px;font-weight:700;color:var(--white)}
+.ps-row.total span:last-child{color:var(--cyan)}
+.card-brand-row{display:flex;gap:6px;margin-bottom:16px}
+.card-brand{width:38px;height:24px;background:var(--bg5);border:1px solid var(--border2);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--w4);font-weight:700}
+.pp-btn{width:100%;padding:14px;border-radius:var(--r);border:none;background:linear-gradient(135deg,#003087,#009cde);color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;letter-spacing:.5px}
+.pp-btn:hover{opacity:.9}
+.secure-note{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--w4);margin-top:12px;justify-content:center}
+
+/* ADD SUB MODAL */
+#sub-disc-info{background:rgba(0,206,201,.08);border:1px solid rgba(0,206,201,.2);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--green);display:none}
+
+/* UTILS */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .5s,transform .5s}
+.reveal.in{opacity:1;transform:none}
+.cyan-sep{width:100%;height:1px;background:linear-gradient(to right,transparent,rgba(0,212,255,.3),transparent);margin:24px 0}
+.text-cyan{color:var(--cyan)}
+.mt-4{margin-top:16px}
+
+@media(max-width:768px){
+  nav{padding:0 16px}
+  .nav-links{display:none}
+  .hero h1{font-size:48px}
+  .wallet-layout{grid-template-columns:1fr}
+  .plans-grid,.feat-grid{grid-template-columns:1fr}
+  .acc-layout{grid-template-columns:1fr}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:28px}
+  .page-wrap{padding:28px 18px 60px}
+  footer{padding:40px 18px 22px}
+  .steps-row{grid-template-columns:1fr 1fr;gap:32px}
+  .d-body{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursor-ring"></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="toast-ico">◈</span><span id="toast-txt"></span></div>
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- AUTH -->
+<div class="overlay" id="auth-ov">
+ <div class="modal">
+  <button class="modal-x" onclick="closeM('auth-ov')">×</button>
+  <div class="modal-title">Benvenuto in Noxera</div>
+  <div class="modal-sub">Accedi al tuo portafoglio AI personale</div>
+  <div class="auth-tabs">
+   <button class="auth-tab on" onclick="authTab('login',this)">Accedi</button>
+   <button class="auth-tab" onclick="authTab('reg',this)">Registrati</button>
+  </div>
+  <div id="auth-login">
+   <div class="social-btns">
+    <button class="social-btn" onclick="socialAuth('Google')">🔵 Continua con Google</button>
+    <button class="social-btn" onclick="socialAuth('Apple')">🍎 Continua con Apple</button>
+   </div>
+   <div class="auth-or"><span>oppure via email</span></div>
+   <div class="fg"><div class="fl">Email</div><input class="fi" type="email" id="l-email" placeholder="tua@email.com"></div>
+   <div class="fg"><div class="fl">Password</div><input class="fi" type="password" id="l-pass" placeholder="••••••••"></div>
+   <a class="forgot" onclick="showToast('✓ Email di recupero inviata. Controlla la tua casella.')">Password dimenticata?</a>
+   <button class="btn btn-primary btn-full" onclick="doLogin()">Accedi →</button>
+   <p style="font-size:11px;color:var(--w4);text-align:center;margin-top:14px">Autenticazione sicura · Crittografia AES-256</p>
+  </div>
+  <div id="auth-reg" style="display:none">
+   <div class="social-btns">
+    <button class="social-btn" onclick="socialAuth('Google')">🔵 Registrati con Google</button>
+    <button class="social-btn" onclick="socialAuth('Apple')">🍎 Registrati con Apple</button>
+   </div>
+   <div class="auth-or"><span>oppure via email</span></div>
+   <div class="frow">
+    <div class="fg" style="margin-bottom:0"><div class="fl">Nome</div><input class="fi" id="r-nome" placeholder="Marco"></div>
+    <div class="fg" style="margin-bottom:0"><div class="fl">Cognome</div><input class="fi" id="r-cog" placeholder="Rossi"></div>
+   </div>
+   <div class="fg" style="margin-top:14px"><div class="fl">Email</div><input class="fi" type="email" id="r-email" placeholder="tua@email.com"></div>
+   <div class="fg"><div class="fl">Password</div><input class="fi" type="password" id="r-pass" placeholder="min. 8 caratteri"></div>
+   <div class="fg"><div class="fl">Settore professionale</div><select class="fi"><option>Design</option><option>Marketing</option><option>Sviluppo</option><option>E-commerce</option><option>Copywriting</option><option>Musica / Video</option><option>Altro</option></select></div>
+   <button class="btn btn-primary btn-full" onclick="doRegister()">Crea account gratuito →</button>
+   <p style="font-size:11px;color:var(--w4);text-align:center;margin-top:12px">Registrandoti accetti i <span style="color:var(--cyan);cursor:pointer">Termini</span> e la <span style="color:var(--cyan);cursor:pointer">Privacy Policy</span></p>
+  </div>
+ </div>
+</div>
+
+<!-- ADD SUB -->
+<div class="overlay" id="addsub-ov">
+ <div class="modal">
+  <button class="modal-x" onclick="closeM('addsub-ov')">×</button>
+  <div class="modal-title">Aggiungi abbonamento</div>
+  <div class="modal-sub">Seleziona il servizio — il prezzo appare automaticamente</div>
+  <div class="fg"><div class="fl">Servizio AI</div>
+   <select class="fi" id="sub-sel" onchange="updateSubPrice()">
+    <option value="">— Scegli un servizio —</option>
+    <option value="20|ChatGPT Plus|OpenAI|🤖|10%|€18/mese">ChatGPT Plus — OpenAI</option>
+    <option value="18|Claude Pro|Anthropic|✦|5%|€17.10/mese">Claude Pro — Anthropic</option>
+    <option value="9.60|Midjourney|Midjourney|🎨|20%|€7.68/mese">Midjourney</option>
+    <option value="35|Runway ML|Runway|🎬|15%|€29.75/mese">Runway ML</option>
+    <option value="7|Suno AI|Suno|🎵|8%|€6.44/mese">Suno AI</option>
+    <option value="17|Perplexity Pro|Perplexity|🔍|10%|€15.30/mese">Perplexity Pro</option>
+    <option value="10|GitHub Copilot|GitHub|💻|5%|€9.50/mese">GitHub Copilot</option>
+    <option value="19|Cursor Pro|Cursor|⌨️|5%|€18.05/mese">Cursor Pro</option>
+    <option value="11|ElevenLabs|ElevenLabs|🔊|10%|€9.90/mese">ElevenLabs</option>
+    <option value="14|Canva AI|Canva|🎯|5%|€13.29/mese">Canva AI</option>
+    <option value="8|Notion AI|Notion|📝|5%|€7.60/mese">Notion AI</option>
+    <option value="0|Altro (manuale)|—|⚙️|0%|—">Altro (manuale)</option>
+   </select>
+  </div>
+  <div id="sub-disc-info"></div>
+  <div class="frow">
+   <div class="fg" style="margin-bottom:0"><div class="fl">Prezzo (€/mese)</div><input class="fi" type="number" id="sub-price" placeholder="0.00" step="0.01"></div>
+   <div class="fg" style="margin-bottom:0"><div class="fl">Ciclo</div><select class="fi"><option>Mensile</option><option>Annuale</option></select></div>
+  </div>
+  <div class="fg" style="margin-top:14px"><div class="fl">Prossimo rinnovo</div><input class="fi" type="date" id="sub-date"></div>
+  <button class="btn btn-primary btn-full" style="margin-top:4px" onclick="confirmAddSub()">Aggiungi al portafoglio →</button>
+ </div>
+</div>
+
+<!-- PAYMENT -->
+<div class="overlay" id="pay-ov">
+ <div class="modal wide">
+  <button class="modal-x" onclick="closeM('pay-ov')">×</button>
+  <div class="modal-title">Completa il pagamento</div>
+  <div class="modal-sub" id="pay-desc">Attivazione piano Noxera</div>
+  <div class="plan-summary">
+   <div class="ps-row"><span>Piano</span><span id="psum-plan">—</span></div>
+   <div class="ps-row"><span>Prezzo base</span><span id="psum-base">—</span></div>
+   <div class="ps-row"><span>Sconto Noxera</span><span id="psum-disc" style="color:var(--green)">—</span></div>
+   <div class="ps-row total"><span>Totale mensile</span><span id="psum-total">—</span></div>
+  </div>
+  <div class="pay-tabs">
+   <button class="pay-tab on" onclick="payTab('stripe',this)">💳 Carta</button>
+   <button class="pay-tab" onclick="payTab('paypal',this)">🅿️ PayPal</button>
+  </div>
+  <div class="pay-sec on" id="ps-stripe">
+   <div class="card-brand-row"><div class="card-brand">VISA</div><div class="card-brand">MC</div><div class="card-brand">AMEX</div></div>
+   <div class="fg"><div class="fl">Numero carta</div><input class="fi" placeholder="1234  5678  9012  3456" maxlength="19" oninput="fmtCard(this)"></div>
+   <div class="frow">
+    <div class="fg" style="margin-bottom:0"><div class="fl">Scadenza</div><input class="fi" placeholder="MM / AA" maxlength="7" oninput="fmtExp(this)"></div>
+    <div class="fg" style="margin-bottom:0"><div class="fl">CVV</div><input class="fi" placeholder="•••" maxlength="4" type="password"></div>
+   </div>
+   <div class="fg" style="margin-top:14px"><div class="fl">Nome sulla carta</div><input class="fi" placeholder="MARCO ROSSI"></div>
+   <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="confirmPay('Stripe')">Paga con Stripe →</button>
+  </div>
+  <div class="pay-sec" id="ps-paypal">
+   <p style="font-size:13px;font-weight:300;color:var(--w3);margin-bottom:20px;line-height:1.6">Verrai reindirizzato su PayPal per completare il pagamento in modo sicuro. Nessun dato carta su Noxera.</p>
+   <button class="pp-btn" onclick="confirmPay('PayPal')">Paga con PayPal</button>
+  </div>
+  <div class="secure-note">🔒 Pagamento sicuro · SSL 256-bit · Stripe · PayPal</div>
+ </div>
+</div>
+
+<!-- AI DETAIL -->
+<div class="overlay" id="detail-ov">
+ <div class="modal xl">
+  <button class="modal-x" onclick="closeM('detail-ov')">×</button>
+  <div id="detail-body"></div>
+ </div>
+</div>
+
+<!-- COMPARE -->
+<div class="overlay" id="cmp-ov">
+ <div class="modal xl">
+  <button class="modal-x" onclick="closeM('cmp-ov')">×</button>
+  <div class="modal-title">Confronto AI</div>
+  <div class="modal-sub">Analisi fianco a fianco</div>
+  <div id="cmp-body"></div>
+ </div>
+</div>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+ <div class="logo" onclick="goPage('home')">
+  <div class="logo-cube">
+   <div class="logo-cube-face front">N</div>
+   <div class="logo-cube-face back">N</div>
+   <div class="logo-cube-face left">X</div>
+   <div class="logo-cube-face right">X</div>
+   <div class="logo-cube-face top">◈</div>
+   <div class="logo-cube-face bottom">◈</div>
+  </div>
+  <div class="logo-text">Noxera</div>
+ </div>
+ <ul class="nav-links">
+  <li><a data-p="home" onclick="goPage('home')">Home</a></li>
+  <li><a data-p="wallet" onclick="goPage('wallet')">Portafoglio</a></li>
+  <li><a data-p="directory" onclick="goPage('directory')">Directory AI</a></li>
+  <li><a data-p="advisor" onclick="goPage('advisor')">Consulente</a></li>
+  <li><a data-p="insurance" onclick="goPage('insurance')">Protezione</a></li>
+ </ul>
+ <div class="nav-right">
+  <button class="btn btn-ghost btn-sm" onclick="openM('auth-ov')">Accedi</button>
+  <button class="btn btn-primary btn-sm" onclick="openM('auth-ov')">Inizia gratis</button>
+ </div>
+</nav>
+
+<!-- ═══ HOME ═══ -->
+<div class="page active" id="p-home">
+ <section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-hud">
+   <div class="hud-corner">SYS: ONLINE<br>v2.0.25</div>
+   <div class="hud-corner" style="text-align:right">AI NODES: 50+<br>STATUS: LIVE</div>
+  </div>
+  <div class="hero-content">
+   <div class="hero-badge"><div class="badge-pulse"></div>Portafoglio AI · Generazione 2025</div>
+   <h1>La tua <span class="glow-word">banca</span>
+    <span class="sub-line">per il mondo dell'intelligenza artificiale</span>
+   </h1>
+   <p class="hero-p">Gestisci ogni abbonamento AI, <b>risparmia con sconti esclusivi</b>, scopri i migliori tool e ricevi consigli personalizzati. Un portafoglio che evolve con te.</p>
+   <div class="hero-cta">
+    <button class="btn btn-primary btn-lg" onclick="openM('auth-ov')">Crea il tuo portafoglio</button>
+    <button class="btn btn-cyan btn-lg" onclick="goPage('directory')">Esplora 50+ AI →</button>
+   </div>
+   <div class="float-cards">
+    <div class="fcard"><div class="fcard-icon">◈</div><div class="fcard-val">50<b>+</b></div><div class="fcard-lbl">AI catalogati</div></div>
+    <div class="fcard"><div class="fcard-icon">💎</div><div class="fcard-val"><b>€</b>47</div><div class="fcard-lbl">Risparmio medio/mese</div></div>
+    <div class="fcard"><div class="fcard-icon">◉</div><div class="fcard-val">15k<b>+</b></div><div class="fcard-lbl">Utenti attivi</div></div>
+    <div class="fcard"><div class="fcard-icon">★</div><div class="fcard-val">98<b>%</b></div><div class="fcard-lbl">Soddisfazione</div></div>
+   </div>
+  </div>
+ </section>
+
+ <div class="ticker-strip">
+  <div class="ticker-inner" id="ticker"></div>
+ </div>
+
+ <section class="feat-section reveal">
+  <div class="s-eyebrow">Cosa offre Noxera</div>
+  <h2 class="s-title">Un ecosistema completo<br>per chi vive di AI.</h2>
+  <p class="s-sub">Ogni funzionalità è progettata per farti risparmiare tempo, denaro e decisioni.</p>
+  <div class="feat-grid">
+   <div class="feat-card" onclick="goPage('wallet')"><div class="feat-ico">◈</div><div class="feat-name">Portafoglio AI</div><div class="feat-desc">Tutti i tuoi abbonamenti in un pannello unico. Spese, rinnovi, sconti e suggerimenti automatici.</div><div class="feat-link">Vai al portafoglio →</div></div>
+   <div class="feat-card" onclick="goPage('directory')"><div class="feat-ico">◉</div><div class="feat-name">Directory & Classifiche</div><div class="feat-desc">50+ AI catalogati con descrizioni complete, pro/contro, prezzi e punteggi aggiornati ogni giorno.</div><div class="feat-link">Esplora la directory →</div></div>
+   <div class="feat-card" onclick="goPage('advisor')"><div class="feat-ico">◎</div><div class="feat-name">Consulente AI</div><div class="feat-desc">Descrivi il tuo lavoro e ricevi uno stack AI personalizzato con prezzi reali e sconti Noxera.</div><div class="feat-link">Parla con il consulente →</div></div>
+   <div class="feat-card" onclick="goPage('insurance')"><div class="feat-ico">◇</div><div class="feat-name">Protezione</div><div class="feat-desc">Se un AI chiude o cambia prezzi, sei coperto. Rimborsi, blocco prezzi e copertura full.</div><div class="feat-link">Scopri i piani →</div></div>
+   <div class="feat-card" onclick="openPay('Sconti Esclusivi Noxera','Bundle Top AI','€45/mese','−€13/mese','€32/mese')"><div class="feat-ico">◆</div><div class="feat-name">Sconti Esclusivi</div><div class="feat-desc">Accordi diretti con ChatGPT, Claude, Midjourney e altri 30+ servizi. Risparmi dal 5% al 30%.</div><div class="feat-link">Vedi le offerte →</div></div>
+   <div class="feat-card"><div class="feat-ico">⟳</div><div class="feat-name">Automazioni</div><div class="feat-desc">Alert prezzi, avvisi rinnovi, report mensile automatico e novità AI per il tuo settore. Tutto via n8n.</div><div class="feat-link">Già incluso →</div></div>
+  </div>
+ </section>
+
+ <section class="steps-section reveal">
+  <div class="s-eyebrow">Come funziona</div>
+  <h2 class="s-title" style="margin-bottom:48px">Quattro passi verso<br>il controllo totale.</h2>
+  <div class="steps-row">
+   <div class="step-card"><div class="step-num">1</div><div class="step-title">Registrati</div><div class="step-desc">Crea il tuo account in 30 secondi. Gratis, nessuna carta richiesta.</div></div>
+   <div class="step-card"><div class="step-num">2</div><div class="step-title">Aggiungi i tuoi AI</div><div class="step-desc">Seleziona i servizi che usi. Il prezzo appare automaticamente.</div></div>
+   <div class="step-card"><div class="step-num">3</div><div class="step-title">Attiva gli sconti</div><div class="step-desc">Noxera applica automaticamente le tariffe negoziate per te.</div></div>
+   <div class="step-card"><div class="step-num">4</div><div class="step-title">Monitora tutto</div><div class="step-desc">Dashboard, alert, report mensili e consulente AI sempre disponibile.</div></div>
+  </div>
+ </section>
+
+ <footer>
+  <div class="footer-inner">
+   <div class="footer-grid">
+    <div><div class="f-logo">Noxera</div><p class="f-desc">Il primo portafoglio intelligente per abbonamenti AI. Risparmia, scopri e proteggi i tuoi investimenti digitali.</p></div>
+    <div class="f-col"><h5>Prodotto</h5><a onclick="goPage('wallet')">Portafoglio</a><a onclick="goPage('directory')">Directory AI</a><a onclick="goPage('advisor')">Consulente</a><a onclick="goPage('insurance')">Protezione</a></div>
+    <div class="f-col"><h5>Azienda</h5><a onclick="showToast('Pagina in arrivo.')">Chi siamo</a><a onclick="showToast('Blog in arrivo.')">Blog</a><a onclick="showToast('Posizioni aperte.')">Carriere</a><a onclick="showToast('Press kit scaricato.')">Press kit</a></div>
+    <div class="f-col"><h5>Legale</h5><a onclick="showToast('Privacy Policy aperta.')">Privacy Policy</a><a onclick="showToast('Termini aperti.')">Termini</a><a onclick="showToast('Cookie settings.')">Cookie</a><a onclick="showToast('GDPR compliance.')">GDPR</a></div>
+   </div>
+   <div class="footer-bottom"><p>© 2025 Noxera — Made in Italy 🇮🇹</p><p>Classifiche aggiornate ogni 24h · Prezzi indicativi</p></div>
+  </div>
+ </footer>
+</div>
+
+<!-- ═══ WALLET ═══ -->
+<div class="page" id="p-wallet">
+ <div class="page-wrap">
+  <div class="page-head"><div class="page-eyebrow">Il tuo account</div><h1 class="page-title">Portafoglio AI</h1></div>
+  <div class="wallet-hero">
+   <div class="wh-top">
+    <div>
+     <div class="wh-label">Spesa mensile totale</div>
+     <div class="wh-total"><small>€</small><span id="wh-total">127.40</span></div>
+     <div class="wh-saving">↓ Risparmi €43/mese con Noxera</div>
+    </div>
+    <div class="wh-stats">
+     <div class="whs"><div class="whs-val" id="wh-count">5</div><div class="whs-lbl">Abbonamenti</div></div>
+     <div class="whs"><div class="whs-val cyan">€43.20</div><div class="whs-lbl">Risparmiato</div></div>
+     <div class="whs"><div class="whs-val">3 nov</div><div class="whs-lbl">Prossimo rinnovo</div></div>
+    </div>
+   </div>
+  </div>
+  <div class="wallet-layout">
+   <div>
+    <div class="subs-stack-label">I tuoi abbonamenti<span onclick="openM('addsub-ov')">+ Aggiungi</span></div>
+    <div class="sub-cards-wrap" id="sub-cards"></div>
+    <button class="btn btn-cyan btn-full" style="margin-top:16px" onclick="openM('addsub-ov')">+ Aggiungi abbonamento</button>
+   </div>
+   <div class="ws-col">
+    <div class="sc"><div class="sc-title">📊 Spesa ultimi 6 mesi</div><div class="bars" id="spend-bars"></div><div class="bar-lbls"><span>Mag</span><span>Giu</span><span>Lug</span><span>Ago</span><span>Set</span><span>Ott</span></div></div>
+    <div class="sc"><div class="sc-title">🔔 Prossimi rinnovi</div><div class="ren-list" id="ren-list"></div></div>
+    <div class="tip-box"><div class="tip-label">◈ Consiglio Noxera</div><p class="tip-text">Hai ChatGPT Plus + Claude Pro attivi. Il <strong style="color:var(--white)">Bundle Testo Premium</strong> li include a €32/mese invece di €38.</p><button class="btn btn-cyan btn-full" onclick="openPay('Bundle Testo Premium','Bundle ChatGPT + Claude','€38/mese','−€6/mese','€32/mese')">Attiva bundle →</button></div>
+   </div>
+  </div>
+ </div>
+</div>
+
+<!-- ═══ DIRECTORY ═══ -->
+<div class="page" id="p-directory">
+ <div class="page-wrap">
+  <div class="page-head"><div class="page-eyebrow">Classifiche live · aggiornate ogni 24h</div><h1 class="page-title">Directory AI</h1><p class="page-sub">50+ strumenti AI con descrizioni complete, pro/contro, prezzi e confronti.</p></div>
+  <div class="dir-search-bar">
+   <div class="search-wrap"><input class="dir-search" placeholder="Cerca un AI..." id="dir-q" oninput="renderDir()"></div>
+   <div class="filter-pills" id="fpills"></div>
+  </div>
+  <div class="compare-bar" id="cmp-bar"><span style="font-size:12px;color:var(--w3)">Confronto:</span><div class="cbar-slots" id="cmp-slots"></div><button class="btn btn-cyan btn-sm" onclick="openCompare()">Confronta →</button><button class="btn btn-ghost btn-sm" onclick="clearCmp()">Svuota</button></div>
+  <div style="font-size:12px;color:var(--w4);margin-bottom:16px" id="ai-count"></div>
+  <div class="ai-grid" id="ai-grid"></div>
+ </div>
+</div>
+
+<!-- ═══ ADVISOR ═══ -->
+<div class="page" id="p-advisor">
+ <div class="adv-wrap">
+  <div class="page-head"><div class="page-eyebrow">Intelligenza personalizzata</div><h1 class="page-title">Consulente AI</h1><p class="page-sub">Descrivi il tuo lavoro. Ti costruisco uno stack su misura.</p></div>
+  <div class="adv-card"><div class="adv-av">🧠</div><div><div class="adv-name">Advisor Noxera</div><div class="adv-online"><span class="adv-dot"></span>Online · risponde in tempo reale</div><div class="adv-desc">Analizza il tuo profilo e seleziona i tool AI più adatti. Stack personalizzati, stima ROI e sconti Noxera inclusi.</div></div></div>
+  <div class="chat-box">
+   <div class="chat-msgs" id="chat-msgs">
+    <div class="cmsg ai"><div class="cmsg-av ai">🧠</div><div class="cmsg-bub">Benvenuto in Noxera. Sono il tuo consulente AI.<br><br>Dimmi <strong>che lavoro fai</strong> o <strong>cosa vorresti automatizzare</strong> — costruirò per te uno stack AI su misura con prezzi reali e sconti Noxera inclusi.</div></div>
+   </div>
+   <div class="chat-chips" id="chat-chips">
+    <button class="chip" onclick="doChip(this)">Sono un designer</button>
+    <button class="chip" onclick="doChip(this)">Creo contenuti social</button>
+    <button class="chip" onclick="doChip(this)">Lavoro nel marketing</button>
+    <button class="chip" onclick="doChip(this)">Sono uno sviluppatore</button>
+    <button class="chip" onclick="doChip(this)">Gestisco un e-commerce</button>
+    <button class="chip" onclick="doChip(this)">Scrivo testi / copywriting</button>
+    <button class="chip" onclick="doChip(this)">Faccio video YouTube</button>
+    <button class="chip" onclick="doChip(this)">Lavoro nella musica</button>
+   </div>
+   <div class="chat-foot">
+    <input class="chat-inp" id="chat-inp" placeholder="Descrivi il tuo lavoro..." onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="chat-send" onclick="sendChat()">→</button>
+   </div>
+  </div>
+ </div>
+</div>
+
+<!-- ═══ INSURANCE ═══ -->
+<div class="page" id="p-insurance">
+ <div class="page-wrap">
+  <div class="page-head"><div class="page-eyebrow">Protezione digitale</div><h1 class="page-title">Protezione Abbonamenti</h1><p class="page-sub">Se un AI chiude o cambia condizioni, sei coperto. Una protezione unica nel settore.</p></div>
+  <div class="plans-grid">
+   <div class="plan-card"><div class="plan-ico">🛡️</div><div class="plan-name">Base</div><div class="plan-price">€2.99 <span>/ mese</span></div><div class="plan-desc">La protezione essenziale per chi inizia.</div><ul class="plan-feats"><li>Rimborso fino a €50</li><li>Alert cambio prezzi real-time</li><li>Report mensile automatico</li><li>Supporto chat 48h</li></ul><button class="plan-btn" onclick="openPay('Piano Base Noxera','Piano Protezione Base','€2.99/mese','—','€2.99/mese')">Attiva ora</button></div>
+   <div class="plan-card feat"><div class="plan-badge"><span class="badge badge-new">Consigliato</span></div><div class="plan-ico">🔐</div><div class="plan-name">Premium</div><div class="plan-price">€7.99 <span>/ mese</span></div><div class="plan-desc">Per chi usa 3+ AI ogni giorno.</div><ul class="plan-feats"><li>Rimborso fino a €200</li><li>Blocco prezzi 12 mesi</li><li>Copertura cambio T&C</li><li>Consulente AI illimitato</li><li>Sconti fino al 30%</li><li>Priorità supporto 4h</li></ul><button class="plan-btn" onclick="openPay('Piano Premium Noxera','Piano Protezione Premium','€7.99/mese','—','€7.99/mese')">Attiva ora</button></div>
+   <div class="plan-card"><div class="plan-ico">🏢</div><div class="plan-name">Business</div><div class="plan-price">€24.99 <span>/ mese</span></div><div class="plan-desc">Per team e aziende.</div><ul class="plan-feats"><li>Rimborso illimitato team</li><li>Multi-account centralizzato</li><li>Analytics avanzata</li><li>API custom (n8n)</li><li>Account manager dedicato</li><li>SLA supporto 1h</li></ul><button class="plan-btn" onclick="openPay('Piano Business Noxera','Piano Protezione Business','€24.99/mese','—','€24.99/mese')">Attiva ora</button></div>
+  </div>
+  <h3 style="font-family:var(--serif);font-size:24px;color:var(--white);margin-bottom:20px">Confronto piani</h3>
+  <table class="ctable">
+   <thead><tr><th>Funzionalità</th><th>Base</th><th>Premium</th><th>Business</th></tr></thead>
+   <tbody>
+    <tr><td>Rimborso massimo</td><td class="val">€50</td><td class="val">€200</td><td class="val">Illimitato</td></tr>
+    <tr><td>Alert cambio prezzi</td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td></tr>
+    <tr><td>Blocco prezzi 12 mesi</td><td><span class="x">—</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td></tr>
+    <tr><td>Sconto abbonamenti</td><td class="val">5%</td><td class="val">30%</td><td class="val">40%</td></tr>
+    <tr><td>Consulente AI illimitato</td><td><span class="x">—</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td></tr>
+    <tr><td>Multi-account team</td><td><span class="x">—</span></td><td><span class="x">—</span></td><td><span class="chk">✓</span></td></tr>
+    <tr><td>Supporto risposta</td><td class="val">48h</td><td class="val">4h</td><td class="val">1h SLA</td></tr>
+   </tbody>
+  </table>
+ </div>
+</div>
+
+<!-- ═══ ACCOUNT ═══ -->
+<div class="page" id="p-account">
+ <div class="page-wrap">
+  <div class="page-head"><div class="page-eyebrow">Il tuo profilo</div><h1 class="page-title">Account</h1></div>
+  <div class="acc-layout">
+   <div class="acc-side">
+    <div class="acc-profile-card">
+     <div class="acc-av">👤</div>
+     <div class="acc-uname" id="acc-uname">Marco Rossi</div>
+     <div class="acc-email" id="acc-uemail">marco.rossi@email.it</div>
+     <div class="acc-plan-tag">◈ Piano Premium</div>
+    </div>
+    <div class="acc-menu">
+     <div class="acc-mi on"><span class="ico">◈</span> Profilo</div>
+     <div class="acc-mi" onclick="showToast('Sezione sicurezza aperta.')"><span class="ico">🔒</span> Sicurezza</div>
+     <div class="acc-mi" onclick="showToast('Notifiche aperte.')"><span class="ico">🔔</span> Notifiche</div>
+     <div class="acc-mi" onclick="goPage('wallet')"><span class="ico">◉</span> Abbonamenti</div>
+     <div class="acc-mi" onclick="goPage('insurance')"><span class="ico">🛡️</span> Piano</div>
+     <div class="acc-mi" onclick="showToast('Fatture scaricate.')"><span class="ico">🧾</span> Fatture</div>
+     <div class="acc-mi" style="color:var(--red)" onclick="doLogout()"><span class="ico">↗</span> Esci</div>
+    </div>
+   </div>
+   <div class="acc-main">
+    <div class="acc-sec">
+     <div class="acc-sec-title">Informazioni personali</div>
+     <div class="frow"><div class="fg" style="margin-bottom:0"><div class="fl">Nome</div><input class="fi" id="acc-nome" value="Marco"></div><div class="fg" style="margin-bottom:0"><div class="fl">Cognome</div><input class="fi" id="acc-cog" value="Rossi"></div></div>
+     <div class="fg" style="margin-top:14px"><div class="fl">Email</div><input class="fi" id="acc-email" value="marco.rossi@email.it" type="email"></div>
+     <div class="fg"><div class="fl">Settore</div><select class="fi"><option>Marketing</option><option>Design</option><option>Sviluppo</option><option>E-commerce</option><option>Altro</option></select></div>
+     <button class="btn btn-primary" onclick="savePro()">Salva modifiche</button>
+    </div>
+    <div class="acc-sec">
+     <div class="acc-sec-title">Notifiche</div>
+     <div class="tgl-row"><div><div class="tgl-lbl">Alert rinnovi</div><div class="tgl-sub">7 giorni prima</div></div><div class="tgl on" onclick="doTgl(this,'Alert rinnovi')"></div></div>
+     <div class="tgl-row"><div><div class="tgl-lbl">Alert cambio prezzi</div><div class="tgl-sub">Immediato</div></div><div class="tgl on" onclick="doTgl(this,'Alert prezzi')"></div></div>
+     <div class="tgl-row"><div><div class="tgl-lbl">Report mensile</div><div class="tgl-sub">Ogni 1° del mese</div></div><div class="tgl on" onclick="doTgl(this,'Report mensile')"></div></div>
+     <div class="tgl-row"><div><div class="tgl-lbl">Nuovi AI nel tuo settore</div><div class="tgl-sub">Settimanale</div></div><div class="tgl" onclick="doTgl(this,'Nuovi AI')"></div></div>
+     <div class="tgl-row"><div><div class="tgl-lbl">Offerte esclusive</div><div class="tgl-sub">Bundle e promozioni</div></div><div class="tgl on" onclick="doTgl(this,'Offerte')"></div></div>
+    </div>
+    <div class="acc-sec">
+     <div class="acc-sec-title">Sicurezza</div>
+     <div class="fg"><div class="fl">Password attuale</div><input class="fi" type="password" id="pw-old" placeholder="••••••••"></div>
+     <div class="frow"><div class="fg" style="margin-bottom:0"><div class="fl">Nuova password</div><input class="fi" type="password" id="pw-new" placeholder="••••••••"></div><div class="fg" style="margin-bottom:0"><div class="fl">Conferma</div><input class="fi" type="password" id="pw-cf" placeholder="••••••••"></div></div>
+     <button class="btn btn-ghost" style="margin-top:14px" onclick="changePw()">Aggiorna password</button>
+    </div>
+    <div class="acc-sec">
+     <div class="acc-sec-title">Piano attuale</div>
+     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div><div style="font-family:var(--serif);font-size:19px;color:var(--white)">Piano Premium</div><div style="font-size:13px;color:var(--w3);margin-top:3px">€7.99/mese · Rinnovo 1 dicembre 2025</div></div>
+      <span class="badge badge-new" style="font-size:11px;padding:4px 12px">Attivo</span>
+     </div>
+     <div style="display:flex;gap:10px">
+      <button class="btn btn-cyan btn-sm" onclick="goPage('insurance')">Cambia piano</button>
+      <button class="btn btn-danger btn-sm" onclick="showToast('Disdetta inviata. Il piano resta attivo fino al prossimo rinnovo.')">Disdici</button>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+
+<script>
+// ════ CURSOR ════
+const cur = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{
+ mx=e.clientX; my=e.clientY;
+ cur.style.left=mx-6+'px'; cur.style.top=my-6+'px';
+});
+(function animRing(){
+ rx+=(mx-rx-18)*.12; ry+=(my-ry-18)*.12;
+ ring.style.left=rx+'px'; ring.style.top=ry+'px';
+ requestAnimationFrame(animRing);
+})();
+document.querySelectorAll('button,a,.feat-card,.ai-card,.sub-wallet-card').forEach(el=>{
+ el.addEventListener('mouseenter',()=>{cur.style.transform='scale(2)';ring.style.transform='scale(1.5) translate(-50%,-50%)';ring.style.borderColor='rgba(0,212,255,.7)'});
+ el.addEventListener('mouseleave',()=>{cur.style.transform='scale(1)';ring.style.transform='translate(-50%,-50%)';ring.style.borderColor='rgba(0,212,255,.4)'});
+});
+
+// ════ THREE.JS HERO ════
+(function initThree(){
+ const canvas = document.getElementById('hero-canvas');
+ const renderer = new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+ const scene = new THREE.Scene();
+ const camera = new THREE.PerspectiveCamera(60, canvas.clientWidth/canvas.clientHeight, 0.1, 1000);
+ camera.position.z = 5;
+ function resize(){
+  const w=canvas.parentElement.clientWidth, h=canvas.parentElement.clientHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+ }
+ resize(); window.addEventListener('resize',resize);
+
+ // Floating spheres
+ const spheres=[];
+ const sGeo = new THREE.SphereGeometry(.08,16,16);
+ for(let i=0;i<60;i++){
+  const mat = new THREE.MeshBasicMaterial({color:i%3===0?0x4f8ef7:i%3===1?0x00d4ff:0x6c5ce7,transparent:true,opacity:.6+Math.random()*.4});
+  const m = new THREE.Mesh(sGeo,mat);
+  m.position.set((Math.random()-.5)*14,(Math.random()-.5)*10,(Math.random()-.5)*6);
+  m.userData={vx:(Math.random()-.5)*.005,vy:(Math.random()-.5)*.005,vz:(Math.random()-.5)*.003};
+  scene.add(m); spheres.push(m);
+ }
+
+ // Wireframe torus
+ const tGeo = new THREE.TorusGeometry(2.2,.5,8,48);
+ const tMat = new THREE.MeshBasicMaterial({color:0x4f8ef7,wireframe:true,transparent:true,opacity:.12});
+ const torus = new THREE.Mesh(tGeo,tMat);
+ scene.add(torus);
+
+ // Inner torus
+ const t2Geo = new THREE.TorusGeometry(1.4,.2,8,32);
+ const t2Mat = new THREE.MeshBasicMaterial({color:0x00d4ff,wireframe:true,transparent:true,opacity:.18});
+ const torus2 = new THREE.Mesh(t2Geo,t2Mat);
+ scene.add(torus2);
+
+ // Lines connecting spheres
+ const lineMat = new THREE.LineBasicMaterial({color:0x4f8ef7,transparent:true,opacity:.08});
+ for(let i=0;i<25;i++){
+  const a=spheres[Math.floor(Math.random()*spheres.length)];
+  const b=spheres[Math.floor(Math.random()*spheres.length)];
+  const pts=[a.position.clone(),b.position.clone()];
+  const geo=new THREE.BufferGeometry().setFromPoints(pts);
+  scene.add(new THREE.Line(geo,lineMat));
+ }
+
+ let mouseX=0,mouseY=0;
+ document.addEventListener('mousemove',e=>{mouseX=(e.clientX/window.innerWidth-.5)*2;mouseY=-(e.clientY/window.innerHeight-.5)*2;});
+
+ function animate(){
+  requestAnimationFrame(animate);
+  torus.rotation.x+=.003; torus.rotation.y+=.005;
+  torus2.rotation.x-=.004; torus2.rotation.z+=.006;
+  spheres.forEach(s=>{
+   s.position.x+=s.userData.vx; s.position.y+=s.userData.vy; s.position.z+=s.userData.vz;
+   if(Math.abs(s.position.x)>7)s.userData.vx*=-1;
+   if(Math.abs(s.position.y)>5)s.userData.vy*=-1;
+   if(Math.abs(s.position.z)>3)s.userData.vz*=-1;
+  });
+  camera.position.x+=(mouseX*.3-camera.position.x)*.03;
+  camera.position.y+=(mouseY*.2-camera.position.y)*.03;
+  camera.lookAt(0,0,0);
+  renderer.render(scene,camera);
+ }
+ animate();
+})();
+
+// ════ AI DATABASE ════
+const AIS=[
+ {id:1,n:'ChatGPT',ico:'🤖',cat:'testo',s:4.8,p:'€20/mese',pr:20,b:'hot',d:'Il modello linguistico più diffuso. GPT-4o versatile per testi, analisi, codice e immagini. Plugin ecosystem enorme.',co:'OpenAI',u:'100M+',pros:['Versatilità massima','Plugin ecosystem','GPT-4o multimodale','API potente'],cons:['Costoso team','Limite msg/ora','Privacy dati'],cases:'Copywriting, coding, analisi, customer support.',nd:'10%',np:'€18/mese'},
+ {id:2,n:'Claude',ico:'✦',cat:'testo',s:4.7,p:'€18/mese',pr:18,b:null,d:'Il modello Anthropic. Context window da 200k token. Superiore per testi lunghi, analisi e ragionamento etico.',co:'Anthropic',u:'10M+',pros:['Context 200k','Testi lunghi top','Sicurezza avanzata','Ragionamento profondo'],cons:['Meno plugin','API costosa'],cases:'Documenti, libri, analisi strategiche, code review.',nd:'5%',np:'€17.10/mese'},
+ {id:3,n:'Gemini Pro',ico:'♊',cat:'testo',s:4.5,p:'Gratis/€18',pr:18,b:'free',d:'Modello Google con integrazione nativa Google Workspace. Piano base gratuito con limiti generosi.',co:'Google',u:'50M+',pros:['G-Suite nativa','Gratis base','Multimodale','Ricerca live'],cons:['Privacy concern','Meno creativo'],cases:'Email, presentazioni, documenti Drive.',nd:'0%',np:'Gratis'},
+ {id:4,n:'Midjourney',ico:'🎨',cat:'immagini',s:4.9,p:'€9.60/mese',pr:9.6,b:'hot',d:'Standard gold per immagini AI. Fotorealismo e stili artistici senza pari. Community 15M+ su Discord.',co:'Midjourney Inc.',u:'15M+',pros:['Qualità immagini #1','Stili unici','Community','Aggiornamenti freq.'],cons:['Solo Discord','No piano gratis'],cases:'Arte, advertising, concept, illustrazioni.',nd:'20%',np:'€7.68/mese'},
+ {id:5,n:'DALL-E 3',ico:'🖼️',cat:'immagini',s:4.4,p:'Incluso ChatGPT',pr:0,b:null,d:'Generatore OpenAI integrato in ChatGPT Plus. Eccellente per illustrazioni precise da testo.',co:'OpenAI',u:'20M+',pros:['Integrato in GPT','API disponibile','Prompt precisi'],cons:['Stile generico','Limite/giorno'],cases:'Illustrazioni, thumbnail, content marketing.',nd:'10%',np:'Incluso ChatGPT'},
+ {id:6,n:'Stable Diffusion',ico:'🌀',cat:'immagini',s:4.3,p:'Gratis',pr:0,b:'free',d:'Open-source leader. Installabile localmente su GPU consumer. Migliaia di modelli community.',co:'Stability AI',u:'Milioni',pros:['100% gratis','Open source','Privacy totale','Modelli custom'],cons:['Richiede GPU','Setup complesso'],cases:'Arte digitale, fotoritocco AI, batch generation.',nd:'0%',np:'Gratis'},
+ {id:7,n:'Adobe Firefly',ico:'🔥',cat:'immagini',s:4.5,p:'Incluso CC',pr:40,b:null,d:'Suite AI Adobe integrata in Photoshop, Illustrator. Addestrata su materiale copyright-safe.',co:'Adobe',u:'30M+',pros:['Integra Adobe','Copyright-safe','Generative Fill','Qualità pro'],cons:['Solo Creative Cloud','Crediti limitati'],cases:'Editing pro, compositing, design grafico.',nd:'5%',np:'Incluso CC'},
+ {id:8,n:'Ideogram',ico:'💡',cat:'immagini',s:4.2,p:'Gratis/€8',pr:8,b:'new',d:'Specializzato nel testo dentro le immagini — il punto debole storico di tutti i generatori AI.',co:'Ideogram AI',u:'2M+',pros:['Testo nelle immagini #1','Gratuito base'],cons:['Meno versatile','Stile limitato'],cases:'Poster, copertine, loghi.',nd:'0%',np:'Gratis'},
+ {id:9,n:'Runway ML',ico:'🎬',cat:'video',s:4.7,p:'€35/mese',pr:35,b:'hot',d:'Leader nel video AI professionale. Gen-3 Alpha produce video cinema-grade. Editing AI avanzato.',co:'Runway AI',u:'3M+',pros:['Video AI #1','Suite editing','Aggiornamenti mensili','API'],cons:['Costoso','Render lento','Crediti limitati'],cases:'Reels, pubblicità, effetti speciali.',nd:'15%',np:'€29.75/mese'},
+ {id:10,n:'Sora',ico:'🎥',cat:'video',s:4.6,p:'ChatGPT Pro',pr:80,b:'new',d:'Modello video OpenAI. Coerenza fisica e temporale incredibile. Video fino a 60 secondi qualità cinema.',co:'OpenAI',u:'1M+',pros:['Fisica realistica','Video lunghi','Qualità cinema'],cons:['Solo ChatGPT Pro €80','Generazioni limitate'],cases:'Spot, video musicali, cinematografia AI.',nd:'0%',np:'Incluso ChatGPT Pro'},
+ {id:11,n:'Kling AI',ico:'🎞️',cat:'video',s:4.4,p:'€15/mese',pr:15,b:'new',d:'Modello video Kuaishou. Eccellente per animare immagini statiche. Prezzo competitivo.',co:'Kuaishou',u:'2M+',pros:['Prezzo competitivo','Animazione immagini','Movimenti fluidi'],cons:['Privacy limitate','Meno documentato'],cases:'Animazione personaggi, video social.',nd:'10%',np:'€13.50/mese'},
+ {id:12,n:'HeyGen',ico:'🎭',cat:'video',s:4.5,p:'€24/mese',pr:24,b:null,d:'Video con avatar AI e voice clone. 230+ avatar, 140+ lingue. Standard per e-learning aziendale.',co:'HeyGen',u:'500k+',pros:['Avatar AI realistico','140 lingue','No studio necessario'],cons:['Costoso','Avatar rigidi a volte'],cases:'Video aziendali, training, marketing multilingue.',nd:'10%',np:'€21.60/mese'},
+ {id:13,n:'GitHub Copilot',ico:'💻',cat:'codice',s:4.6,p:'€10/mese',pr:10,b:null,d:'Assistente AI per sviluppatori. Autocompletamento in VS Code, JetBrains. Powered by GPT-4.',co:'GitHub/Microsoft',u:'1.3M+',pros:['Integrazione IDE','Multi-linguaggio','Autocompletamento preciso'],cons:['Abbonamento mensile','Privacy codice'],cases:'Web dev, backend, scripting.',nd:'5%',np:'€9.50/mese'},
+ {id:14,n:'Cursor',ico:'⌨️',cat:'codice',s:4.7,p:'€19/mese',pr:19,b:'new',d:'IDE AI-native che ridefinisce il coding. Comprende intere codebase, suggerisce refactoring.',co:'Anysphere',u:'500k+',pros:['IDE AI-native','Context intera codebase','Refactoring auto'],cons:['Relativamente nuovo','Curva apprendimento'],cases:'Full-stack dev, architettura, debug avanzato.',nd:'5%',np:'€18.05/mese'},
+ {id:15,n:'Replit AI',ico:'🔁',cat:'codice',s:4.1,p:'€14/mese',pr:14,b:null,d:'Ambiente sviluppo cloud con AI. Esegui nel browser, collabora in tempo reale, deploy un click.',co:'Replit',u:'20M+',pros:['No setup locale','Deploy immediato','Collaborazione real-time'],cons:['Lento su grandi progetti'],cases:'Prototipazione, educazione, hackathon.',nd:'5%',np:'€13.30/mese'},
+ {id:16,n:'Suno AI',ico:'🎵',cat:'audio',s:4.5,p:'€7/mese',pr:7,b:'hot',d:'Piattaforma #1 per musica AI. Da prompt testuale a brano completo in 30 secondi. Tutti i generi.',co:'Suno',u:'5M+',pros:['Qualità audio sorprendente','Tutti i generi','Velocissimo'],cons:['Diritti incerti','Limite generazioni'],cases:'Jingle, colonne sonore, podcast.',nd:'8%',np:'€6.44/mese'},
+ {id:17,n:'ElevenLabs',ico:'🔊',cat:'audio',s:4.8,p:'€11/mese',pr:11,b:null,d:'Leader nel voice cloning. Clona una voce da 1 minuto audio. 2900+ voci in 29 lingue.',co:'ElevenLabs',u:'1M+',pros:['Voice cloning #1','2900+ voci','29 lingue','API potente'],cons:['Costoso piani avanzati'],cases:'Audiolibri, podcast, doppiaggio.',nd:'10%',np:'€9.90/mese'},
+ {id:18,n:'Udio',ico:'🎶',cat:'audio',s:4.3,p:'€8/mese',pr:8,b:'new',d:'Alternativa a Suno con maggiore controllo sulla struttura musicale. Migliore per produzioni strutturate.',co:'Udio',u:'1M+',pros:['Struttura musicale','Controllo avanzato'],cons:['Meno generi','UI meno intuitiva'],cases:'Produzione musicale strutturata.',nd:'5%',np:'€7.60/mese'},
+ {id:19,n:'Perplexity',ico:'🔍',cat:'business',s:4.4,p:'Gratis/€17',pr:17,b:'free',d:'Motore ricerca AI con fonti citate real-time. Cerca web, Reddit, accademici, YouTube.',co:'Perplexity AI',u:'15M+',pros:['Fonti citate','Ricerca live','Piano gratis'],cons:['Non crea contenuti'],cases:'Ricerca, fact-checking, analisi competitiva.',nd:'10%',np:'Gratis/€15.30'},
+ {id:20,n:'Notion AI',ico:'📝',cat:'business',s:4.2,p:'+€8/mese',pr:8,b:null,d:'Add-on AI per Notion. Riassume pagine, genera contenuti, risponde su documenti.',co:'Notion',u:'30M workspace',pros:['Integra Notion','Riassunti veloci','Q&A documenti'],cons:['Solo in Notion'],cases:'Team knowledge base, note, project management.',nd:'5%',np:'+€7.60/mese'},
+ {id:21,n:'Jasper AI',ico:'✍️',cat:'business',s:4.0,p:'€39/mese',pr:39,b:null,d:'Piattaforma enterprise copywriting. Templates per email, ads, landing page. Brand voice training.',co:'Jasper',u:'100k+',pros:['Templates marketing','Brand voice','Integra Surfer SEO'],cons:['Costoso','Risposte generiche'],cases:'Marketing team, agenzie, content at scale.',nd:'15%',np:'€33.15/mese'},
+ {id:22,n:'Zapier AI',ico:'⚡',cat:'business',s:4.2,p:'€20/mese',pr:20,b:null,d:'Automazione no-code potenziata da AI. Collega 6000+ app con linguaggio naturale.',co:'Zapier',u:'2.2M+',pros:['6000+ integrazioni','No-code','Reliability alta'],cons:['Costoso piano avanzati','Limiti task/mese'],cases:'Automazione business, CRM sync.',nd:'10%',np:'€17.99/mese'},
+ {id:23,n:'Make',ico:'🔗',cat:'business',s:4.3,p:'Gratis/€9',pr:9,b:'free',d:'Automazione visuale avanzata. Più potente di Zapier per workflow complessi. 2000+ app.',co:'Make',u:'500k+',pros:['Piano free generoso','Più flessibile di Zapier'],cons:['Curva apprendimento','UI complessa'],cases:'Automazione avanzata, API custom.',nd:'5%',np:'Gratis/€8.55'},
+ {id:24,n:'DeepL',ico:'🌍',cat:'testo',s:4.6,p:'Gratis/€7.49',pr:7.49,b:'free',d:'Traduzione AI più precisa del mercato, superiore a Google Translate. 31 lingue, documenti.',co:'DeepL GmbH',u:'10M+',pros:['Traduzione #1','GDPR EU','31 lingue','Documenti'],cons:['Limiti free'],cases:'Traduzione professionale, localizzazione.',nd:'5%',np:'Gratis/€7.12'},
+ {id:25,n:'Grammarly',ico:'📐',cat:'testo',s:4.3,p:'Gratis/€12',pr:12,b:'free',d:'Correttore AI più usato. GrammarlyGO per scrittura assistita, tone detection, riscrittura.',co:'Grammarly',u:'30M+',pros:['Integrazione ovunque','Tone detection','Piano free'],cons:['Meno utile in italiano'],cases:'Email, documenti, editing.',nd:'5%',np:'Gratis/€11.40'},
+ {id:26,n:'Canva AI',ico:'🎯',cat:'immagini',s:4.3,p:'€14/mese',pr:14,b:null,d:'Suite design con AI. Magic Design, Background Remover, Text to Image. Il più accessibile.',co:'Canva',u:'175M+',pros:['Facilissimo','Suite completa','170M+ template'],cons:['Meno pro'],cases:'Social media, presentazioni, poster.',nd:'5%',np:'€13.29/mese'},
+ {id:27,n:'Synthesia',ico:'📹',cat:'video',s:4.3,p:'€22/mese',pr:22,b:null,d:'Video con avatar AI senza camera. 230+ avatar, 140+ lingue. Standard e-learning aziendale.',co:'Synthesia',u:'50k aziende',pros:['230+ avatar','No studio','140 lingue'],cons:['Avatar rigidi','Limitato creativo'],cases:'E-learning, onboarding, video prodotto.',nd:'10%',np:'€19.80/mese'},
+ {id:28,n:'Descript',ico:'🎙️',cat:'video',s:4.2,p:'€12/mese',pr:12,b:null,d:'Editor video rivoluzionario: edita il video modificando il testo. Filler words removal AI.',co:'Descript',u:'500k+',pros:['Editing via testo','Filler removal auto'],cons:['Export lento'],cases:'Podcast, YouTube, webinar.',nd:'8%',np:'€11.04/mese'},
+ {id:29,n:'Character.ai',ico:'🎭',cat:'testo',s:4.0,p:'Gratis/€10',pr:10,b:'free',d:'Conversazione con personaggi AI. Famoso per roleplay e companion AI. 20M+ utenti giornalieri.',co:'Character.ai',u:'20M DAU',pros:['Personaggi custom','Community','Gratis base'],cons:['Non professionale','Dipendenza emotiva'],cases:'Intrattenimento, pratica lingue.',nd:'0%',np:'Gratis/€9.99'},
+ {id:30,n:'Mistral AI',ico:'🌪️',cat:'testo',s:4.1,p:'Gratis/API',pr:0,b:'free',d:'Modelli open-weight europei. GDPR europea, server Francia. Mixtral compete con GPT-4.',co:'Mistral AI',u:'500k dev',pros:['GDPR europeo','Costi API bassi','Open-weight'],cons:['Meno capability top'],cases:'Aziende EU compliance, sviluppatori.',nd:'0%',np:'Pay per token'},
+];
+
+const CATS=['Tutti','testo','immagini','video','codice','audio','business'];
+let cmpList=[],activeF='Tutti';
+let userSubs=[
+ {id:1,n:'ChatGPT Plus',ico:'🤖',plan:'Piano Pro · OpenAI',price:20,disc:'−10%',renew:'3 nov',color:'linear-gradient(135deg,#1a1a2e,#16213e)',accent:'#4f8ef7'},
+ {id:2,n:'Claude Pro',ico:'✦',plan:'Piano Pro · Anthropic',price:18,disc:'−5%',renew:'5 nov',color:'linear-gradient(135deg,#0d1b2a,#1b263b)',accent:'#00d4ff'},
+ {id:3,n:'Midjourney',ico:'🎨',plan:'Piano Basic · Midjourney',price:9.60,disc:'−20%',renew:'8 nov',color:'linear-gradient(135deg,#1a0a2e,#2d1b69)',accent:'#a29bfe'},
+ {id:4,n:'Runway ML',ico:'🎬',plan:'Piano Standard · Runway',price:35,disc:'−15%',renew:'15 nov',color:'linear-gradient(135deg,#0a1628,#0e2040)',accent:'#74b9ff'},
+ {id:5,n:'Suno AI',ico:'🎵',plan:'Piano Pro · Suno',price:7,disc:'−8%',renew:'22 nov',color:'linear-gradient(135deg,#1a0a1a,#2d1b2d)',accent:'#fd79a8'},
+];
+
+// ════ NAV ════
+function goPage(id){
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+ document.getElementById('p-'+id).classList.add('active');
+ window.scrollTo(0,0);
+ document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('active',a.dataset.p===id));
+ if(id==='directory')renderDir();
+ if(id==='wallet')renderWallet();
+ observeReveal();
+}
+
+// ════ TOAST ════
+function showToast(msg){
+ const t=document.getElementById('toast');
+ document.getElementById('toast-txt').textContent=msg;
+ t.classList.add('show');
+ clearTimeout(t._t);
+ t._t=setTimeout(()=>t.classList.remove('show'),3800);
+}
+
+// ════ MODALS ════
+function openM(id){document.getElementById(id).classList.add('open')}
+function closeM(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+
+function openPay(desc,plan,base,disc,total){
+ document.getElementById('pay-desc').textContent=desc;
+ document.getElementById('psum-plan').textContent=plan;
+ document.getElementById('psum-base').textContent=base;
+ document.getElementById('psum-disc').textContent=disc;
+ document.getElementById('psum-total').textContent=total;
+ openM('pay-ov');
+}
+
+// ════ AUTH ════
+function authTab(t,el){
+ document.querySelectorAll('.auth-tab').forEach(x=>x.classList.remove('on'));
+ el.classList.add('on');
+ document.getElementById('auth-login').style.display=t==='login'?'block':'none';
+ document.getElementById('auth-reg').style.display=t==='reg'?'block':'none';
+}
+function socialAuth(p){closeM('auth-ov');showToast(`✓ Accesso con ${p} completato. Benvenuto in Noxera!`)}
+function doLogin(){
+ const e=document.getElementById('l-email').value;
+ const p=document.getElementById('l-pass').value;
+ if(!e||!p){showToast('⚠ Inserisci email e password.');return}
+ closeM('auth-ov');showToast('✓ Accesso effettuato. Bentornato in Noxera!');
+}
+function doRegister(){
+ const n=document.getElementById('r-nome').value;
+ const e=document.getElementById('r-email').value;
+ const p=document.getElementById('r-pass').value;
+ if(!n||!e||!p){showToast('⚠ Compila tutti i campi.');return}
+ if(p.length<8){showToast('⚠ Password minimo 8 caratteri.');return}
+ closeM('auth-ov');showToast(`✓ Account creato per ${n}! Controlla l'email per la conferma.`);
+}
+function doLogout(){showToast('✓ Logout effettuato. A presto!');setTimeout(()=>goPage('home'),1000)}
+
+// ════ WALLET ════
+const CARD_COLORS=[
+ 'linear-gradient(135deg,#0f2027,#203a43,#2c5364)',
+ 'linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)',
+ 'linear-gradient(135deg,#141e30,#243b55)',
+ 'linear-gradient(135deg,#0d0d0d,#434343)',
+ 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)',
+ 'linear-gradient(135deg,#093028,#237a57)',
+];
+function renderWallet(){
+ const total=userSubs.reduce((a,s)=>a+s.price,0);
+ document.getElementById('wh-total').textContent=total.toFixed(2);
+ document.getElementById('wh-count').textContent=userSubs.length;
+
+ document.getElementById('sub-cards').innerHTML=userSubs.map((s,i)=>`
+  <div class="sub-wallet-card" style="background:${CARD_COLORS[i%CARD_COLORS.length]};box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.05)">
+   <div class="swc-top">
+    <div class="swc-brand"><div class="swc-ico">${s.ico}</div><div><div class="swc-name">${s.n}</div><div class="swc-plan">${s.plan}</div></div></div>
+    <div class="swc-price"><div class="swc-amount">€${s.price.toFixed(2)}</div><div class="swc-cycle">/mese</div></div>
+   </div>
+   <div class="swc-bottom">
+    <div class="swc-renew">Rinnovo ${s.renew}</div>
+    <div class="swc-disc">${s.disc} Noxera</div>
+   </div>
+   <div class="swc-actions">
+    <button class="swc-btn" onclick="showToast('Dettagli ${s.n} aperti.')">Dettagli</button>
+    <button class="swc-btn" onclick="showToast('${s.n} messo in pausa.')">Pausa</button>
+    <button class="swc-btn del" onclick="rmSub(${s.id})">Rimuovi</button>
+   </div>
+  </div>`).join('');
+
+ const bars=[42,55,48,70,65,82];
+ document.getElementById('spend-bars').innerHTML=bars.map((h,i)=>
+  `<div class="bar ${i===5?'on':''}" style="height:${h}%" onclick="showToast('Spesa ${['Mag','Giu','Lug','Ago','Set','Ott'][i]}: €${Math.round(total*h/100)}')"></div>`
+ ).join('');
+
+ document.getElementById('ren-list').innerHTML=userSubs.slice(0,4).map(s=>`
+  <div class="ren-item"><div class="ren-left"><div class="ren-dot"></div><div><div class="ren-name">${s.n}</div><div class="ren-date">${s.renew} novembre</div></div></div><div class="ren-amt">€${s.price.toFixed(2)}</div></div>`).join('');
+}
+
+function rmSub(id){
+ userSubs=userSubs.filter(x=>x.id!==id);
+ renderWallet();
+ showToast('✓ Abbonamento rimosso dal portafoglio.');
+}
+
+function updateSubPrice(){
+ const v=document.getElementById('sub-sel').value;
+ const info=document.getElementById('sub-disc-info');
+ if(!v){info.style.display='none';return}
+ const p=v.split('|');
+ document.getElementById('sub-price').value=parseFloat(p[0])>0?parseFloat(p[0]).toFixed(2):'';
+ const d=new Date();d.setMonth(d.getMonth()+1);
+ document.getElementById('sub-date').value=d.toISOString().split('T')[0];
+ if(p[4]!=='0%'){info.style.display='block';info.textContent=`◈ Con Noxera ottieni il ${p[4]} di sconto → prezzo effettivo ${p[5]}`}
+ else info.style.display='none';
+}
+
+function confirmAddSub(){
+ const v=document.getElementById('sub-sel').value;
+ if(!v){showToast('⚠ Seleziona un servizio AI.');return}
+ const p=v.split('|');
+ const pr=parseFloat(document.getElementById('sub-price').value)||parseFloat(p[0]);
+ userSubs.push({id:Date.now(),n:p[1],ico:p[3],plan:p[2]+' · '+p[1],price:pr,disc:p[4]!=='0%'?'−'+p[4]:'—',renew:'1 gen'});
+ closeM('addsub-ov');renderWallet();
+ showToast(`✓ ${p[1]} aggiunto al portafoglio! Prezzo Noxera: ${p[5]}`);
+}
+
+// ════ PAYMENTS ════
+function payTab(t,el){
+ document.querySelectorAll('.pay-tab').forEach(x=>x.classList.remove('on'));el.classList.add('on');
+ document.getElementById('ps-stripe').classList.toggle('on',t==='stripe');
+ document.getElementById('ps-paypal').classList.toggle('on',t==='paypal');
+}
+function fmtCard(i){let v=i.value.replace(/\D/g,'').substring(0,16);i.value=v.replace(/(.{4})/g,'$1  ').trim()}
+function fmtExp(i){let v=i.value.replace(/\D/g,'').substring(0,4);if(v.length>=2)v=v.substring(0,2)+' / '+v.substring(2);i.value=v}
+function confirmPay(m){
+ const plan=document.getElementById('psum-plan').textContent;
+ const total=document.getElementById('psum-total').textContent;
+ closeM('pay-ov');
+ showToast(`✓ Pagamento ${total} via ${m} confermato! "${plan}" attivato.`);
+}
+
+// ════ DIRECTORY ════
+function renderDir(){
+ const pp=document.getElementById('fpills');
+ if(!pp.children.length){
+  CATS.forEach(c=>{
+   const b=document.createElement('button');
+   b.className='fpill'+(c==='Tutti'?' on':'');
+   b.textContent=c==='Tutti'?'Tutti':c.charAt(0).toUpperCase()+c.slice(1);
+   b.onclick=()=>{document.querySelectorAll('.fpill').forEach(x=>x.classList.remove('on'));b.classList.add('on');activeF=c;renderDir()};
+   pp.appendChild(b);
+  });
+ }
+ const q=(document.getElementById('dir-q')?.value||'').toLowerCase();
+ let data=AIS;
+ if(activeF!=='Tutti')data=data.filter(a=>a.cat===activeF);
+ if(q)data=data.filter(a=>a.n.toLowerCase().includes(q)||a.d.toLowerCase().includes(q));
+ data=[...data].sort((a,b)=>b.s-a.s);
+ document.getElementById('ai-count').textContent=`${data.length} strumenti AI trovati`;
+
+ const bHtml=a=>{
+  if(a.b==='hot')return'<span class="badge badge-hot">🔥 Trend</span>';
+  if(a.b==='new')return'<span class="badge badge-new">Nuovo</span>';
+  if(a.b==='free')return'<span class="badge badge-free">Gratis</span>';
+  return'';
+ };
+
+ document.getElementById('ai-grid').innerHTML=data.map(a=>`
+  <div class="ai-card">
+   <div class="aic-top"><div class="aic-ico">${a.ico}</div><div class="aic-badges">${bHtml(a)}</div></div>
+   <div class="aic-name">${a.n}</div>
+   <div class="aic-cat">${a.cat} · ${a.co}</div>
+   <div class="aic-desc">${a.d.substring(0,100)}...</div>
+   <div class="aic-pc">
+    ${a.pros.slice(0,2).map(p=>`<div class="pc pro"><span class="ps">✓</span>${p}</div>`).join('')}
+    ${a.cons.slice(0,2).map(c=>`<div class="pc con"><span class="ps">✗</span>${c}</div>`).join('')}
+   </div>
+   <div class="aic-foot">
+    <div style="display:flex;align-items:center"><span class="stars">${'★'.repeat(Math.round(a.s))}</span><span class="score">${a.s}</span></div>
+    <div class="aic-price">Da <b>${a.p}</b></div>
+   </div>
+   <div class="aic-btns">
+    <button class="acb" onclick="openDetail(${a.id})">Dettagli</button>
+    <button class="acb add" onclick="addFromDir(${a.id})">+ Portfolio</button>
+    <button class="acb cmp ${cmpList.includes(a.id)?'sel':''}" id="cmp-${a.id}" onclick="toggleCmp(${a.id})">Confronta</button>
+   </div>
+  </div>`).join('');
+}
+
+function addFromDir(id){
+ const a=AIS.find(x=>x.id===id);
+ if(userSubs.find(s=>s.n===a.n)){showToast(`⚠ ${a.n} è già nel portafoglio.`);return}
+ userSubs.push({id:Date.now(),n:a.n,ico:a.ico,plan:a.cat+' · '+a.co,price:a.pr||0,disc:a.nd!=='0%'?'−'+a.nd:'—',renew:'1 gen'});
+ showToast(`✓ ${a.n} aggiunto! Prezzo Noxera: ${a.np}`);
+}
+
+function openDetail(id){
+ const a=AIS.find(x=>x.id===id);
+ document.getElementById('detail-body').innerHTML=`
+  <div class="detail-head"><div class="d-ico">${a.ico}</div><div><div class="d-name">${a.n}</div><div class="d-cat">${a.cat} · ${a.co} · ${a.u} utenti</div><div style="display:flex;gap:6px;flex-wrap:wrap">${a.b==='hot'?'<span class="badge badge-hot">🔥 Trend</span>':a.b==='new'?'<span class="badge badge-new">Nuovo</span>':a.b==='free'?'<span class="badge badge-free">Gratis</span>':''}<span class="badge badge-blue">${a.u} utenti</span></div></div></div>
+  <div class="d-body">
+   <div>
+    <div class="d-desc">${a.d}</div>
+    <div class="d-sec-title">Casi d'uso principali</div>
+    <div class="d-feats">${a.cases.split(',').map(c=>`<div class="d-feat">${c.trim()}</div>`).join('')}</div>
+    <div class="d-sec-title">Pro e Contro</div>
+    <div class="d-pc-grid">${a.pros.map(p=>`<div class="d-pc pro">✓ ${p}</div>`).join('')}${a.cons.map(c=>`<div class="d-pc con">✗ ${c}</div>`).join('')}</div>
+   </div>
+   <div>
+    <div class="d-price-card"><div class="dp-lbl">Prezzo standard</div><div class="dp-price">${a.p}</div>${a.nd!=='0%'?`<div class="dp-noxera">◈ Con Noxera: ${a.np} (−${a.nd})</div>`:''}</div>
+    <button class="btn btn-primary btn-full" onclick="addFromDir(${a.id});closeM('detail-ov')">+ Aggiungi al portafoglio</button>
+    <button class="btn btn-cyan btn-full mt-4" onclick="closeM('detail-ov');openPay(${a.n},'${a.n} via Noxera','${a.p}','${a.nd!=='0%'?'−'+a.nd:'—'}','${a.np}')">Acquista con sconto Noxera</button>
+   </div>
+  </div>`;
+ openM('detail-ov');
+}
+
+function toggleCmp(id){
+ if(cmpList.includes(id))cmpList=cmpList.filter(x=>x!==id);
+ else{if(cmpList.length>=3){showToast('⚠ Massimo 3 AI da confrontare.');return}cmpList.push(id)}
+ document.getElementById('cmp-'+id)?.classList.toggle('sel',cmpList.includes(id));
+ updateCmpBar();
+}
+function updateCmpBar(){
+ const bar=document.getElementById('cmp-bar');
+ if(!cmpList.length){bar.classList.remove('show');return}
+ bar.classList.add('show');
+ document.getElementById('cmp-slots').innerHTML=cmpList.map(id=>{const a=AIS.find(x=>x.id===id);return`<div class="cslot filled">${a.ico} ${a.n}</div>`}).join('')+(cmpList.length<3?'<div class="cslot">+</div>':'');
+}
+function clearCmp(){cmpList=[];document.querySelectorAll('.acb.cmp').forEach(b=>b.classList.remove('sel'));document.getElementById('cmp-bar').classList.remove('show')}
+function openCompare(){
+ if(cmpList.length<2){showToast('⚠ Seleziona almeno 2 AI da confrontare.');return}
+ const ais=cmpList.map(id=>AIS.find(a=>a.id===id));
+ const maxS=Math.max(...ais.map(a=>a.s));
+ const rows=[['Punteggio',...ais.map(a=>a.s)],['Prezzo',...ais.map(a=>a.p)],['Prezzo Noxera',...ais.map(a=>a.np)],['Sconto Noxera',...ais.map(a=>a.nd)],['Utenti',...ais.map(a=>a.u)],['Pro principali',...ais.map(a=>a.pros.slice(0,2).join(', '))],['Svantaggi',...ais.map(a=>a.cons.join(', '))]];
+ document.getElementById('cmp-body').innerHTML=`
+  <div class="cmp-grid" style="display:grid;grid-template-columns:repeat(${ais.length},1fr);gap:14px">
+   ${ais.map(a=>`<div class="cmp-head"><div class="cmp-ico">${a.ico}</div><div class="cmp-name">${a.n}</div><div class="cmp-score">${'★'.repeat(Math.round(a.s))} ${a.s}</div></div>`).join('')}
+  </div>
+  <table class="cmp-table">${rows.map(r=>`<tr><td>${r[0]}</td>${r.slice(1).map((v,i)=>`<td class="${ais[i].s===maxS&&r[0]==='Punteggio'?'winner':''}">${v}</td>`).join('')}</tr>`).join('')}</table>
+  <div style="display:flex;gap:10px;margin-top:20px">${ais.map(a=>`<button class="btn btn-cyan btn-sm" onclick="addFromDir(${a.id})">+ ${a.n}</button>`).join('')}</div>`;
+ openM('cmp-ov');
+}
+
+// ════ ADVISOR ════
+const ADV={
+ designer:`Per un designer nel 2025:\n\n**1. Midjourney** (€7.68/mese con Noxera, −20%) — immagini e concept visivi assoluti.\n**2. Adobe Firefly** (incluso CC) — editing AI nativo in Photoshop.\n**3. Kling AI** (€13.50/mese, −10%) — anima le illustrazioni in video.\n**4. Canva AI** (€13.29/mese) — workflow veloci per clienti.\n\nBundle Design Noxera: €42/mese invece di €54. Risparmio: €12/mese.`,
+ social:`Per creator di contenuti social:\n\n**1. ChatGPT Plus** (€18/mese) — caption, hashtag, piani editoriali.\n**2. Midjourney** (€7.68/mese, −20%) — immagini per post e storie.\n**3. Runway ML** (€29.75/mese, −15%) — Reels e TikTok AI.\n**4. Suno AI** (€6.44/mese, −8%) — musica originale per i video.\n\nBundle Creator Noxera: €61.87/mese invece di €73.60.`,
+ marketing:`Per il marketing digitale:\n\n**1. ChatGPT Plus** (€18/mese) — copy, email, landing page.\n**2. Perplexity Pro** (€15.30/mese) — ricerca competitor live.\n**3. Jasper AI** (€33.15/mese, −15%) — copy marketing scalabile.\n**4. Zapier AI** (€17.99/mese) — automazione campagne.\n\nConsiglio: se hai ChatGPT, Jasper può essere ridondante. Risparmi €33/mese.`,
+ sviluppatore:`Stack definitivo per sviluppatori:\n\n**1. Cursor** (€18.05/mese, −5%) — IDE AI-native. Ha sostituito VS Code per l'80% dei dev.\n**2. GitHub Copilot** (€9.50/mese) — fallback per IDE legacy.\n**3. Claude Pro** (€17.10/mese, −5%) — debugging su contesti enormi.\n**4. Perplexity Pro** (€15.30/mese) — documentazione live.\n\nBundle Dev Noxera: €57/mese invece di €64.`,
+ ecommerce:`Per e-commerce ad alto volume:\n\n**1. ChatGPT Plus** (€18/mese) — schede prodotto, SEO, email auto.\n**2. Midjourney** (€7.68/mese) — foto prodotto e banner.\n**3. ElevenLabs** (€9.90/mese) — voiceover in 40 lingue.\n**4. Zapier AI** (€17.99/mese) — automazione ordini e CRM.\n\nROI: questi 4 tool sostituiscono 25h/settimana di lavoro.`,
+ copywriting:`Per copywriter professionisti:\n\n**1. Claude Pro** (€17.10/mese) — testi lunghi, coerenti, narrativi.\n**2. ChatGPT Plus** (€18/mese) — varianti rapide e brainstorming.\n**3. Perplexity Pro** (€15.30/mese) — ricerca fonti live.\n**4. Grammarly** (€11.40/mese) — editing finale e tono.\n\nClaudevsGPT: Claude per long-form, GPT per social. Non si sovrappongono.`,
+ youtube:`Per YouTuber e video creator:\n\n**1. Runway ML** (€29.75/mese) — effetti speciali e editing AI.\n**2. ElevenLabs** (€9.90/mese) — voice over in più lingue.\n**3. Descript** (€11.04/mese) — edita il video modificando il testo.\n**4. Pictory** — converti articoli in video automaticamente.\n\nBonus: Suno AI (€6.44/mese) per musica copyright-free.`,
+ musica:`Per musicisti e producer:\n\n**1. Suno AI** (€6.44/mese) — brani completi da prompt. Tutti i generi.\n**2. Udio** (€7.60/mese) — strutture musicali complesse.\n**3. ElevenLabs** (€9.90/mese) — voice clone nella tua voce.\n**4. Runway ML** (€29.75/mese) — video musicali AI.\n\nBundle Musica Noxera: €50/mese invece di €62.`,
+};
+function doChip(el){
+ const t=el.textContent;
+ addMsg(t,'user');
+ document.getElementById('chat-chips').style.display='none';
+ const k=t.includes('designer')?'designer':t.includes('social')?'social':t.includes('marketing')?'marketing':t.includes('sviluppatore')?'sviluppatore':t.includes('e-commerce')?'ecommerce':t.includes('copy')?'copywriting':t.includes('YouTube')?'youtube':'musica';
+ setTimeout(()=>addMsg(ADV[k],'ai'),900);
+}
+function sendChat(){
+ const inp=document.getElementById('chat-inp');
+ const t=inp.value.trim();if(!t)return;
+ addMsg(t,'user');inp.value='';
+ document.getElementById('chat-chips').style.display='none';
+ const lo=t.toLowerCase();
+ let r;
+ if(lo.includes('design'))r=ADV.designer;
+ else if(lo.includes('social')||lo.includes('instagram')||lo.includes('tiktok'))r=ADV.social;
+ else if(lo.includes('market'))r=ADV.marketing;
+ else if(lo.includes('cod')||lo.includes('svilupp'))r=ADV.sviluppatore;
+ else if(lo.includes('commerc')||lo.includes('shop'))r=ADV.ecommerce;
+ else if(lo.includes('scri')||lo.includes('copy'))r=ADV.copywriting;
+ else if(lo.includes('video')||lo.includes('youtube'))r=ADV.youtube;
+ else if(lo.includes('music')||lo.includes('brano'))r=ADV.musica;
+ else r=`Per costruire il tuo stack ottimale ho bisogno di sapere:\n\n**1.** Qual è il tuo obiettivo principale: produrre contenuti, automatizzare, analizzare?\n**2.** Hai già qualche tool AI? Quale?\n**3.** Qual è il tuo budget mensile massimo?\n\nCon queste info costruisco uno stack preciso con i prezzi Noxera inclusi.`;
+ setTimeout(()=>addMsg(r,'ai'),900);
+}
+function addMsg(text,role){
+ const c=document.getElementById('chat-msgs');
+ const d=document.createElement('div');
+ d.className=`cmsg ${role}`;
+ if(role==='ai'){
+  d.innerHTML=`<div class="cmsg-av ai">🧠</div><div class="cmsg-bub"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+  setTimeout(()=>{d.querySelector('.cmsg-bub').innerHTML=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');c.scrollTop=c.scrollHeight},700);
+ }else{
+  d.innerHTML=`<div class="cmsg-av user">👤</div><div class="cmsg-bub">${text}</div>`;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+ }
+}
+
+// ════ ACCOUNT ════
+function savePro(){
+ const n=document.getElementById('acc-nome').value;
+ if(!n){showToast('⚠ Il nome non può essere vuoto.');return}
+ document.getElementById('acc-uname').textContent=n+' '+document.getElementById('acc-cog').value;
+ document.getElementById('acc-uemail').textContent=document.getElementById('acc-email').value;
+ showToast('✓ Profilo aggiornato con successo.');
+}
+function changePw(){
+ const o=document.getElementById('pw-old').value;
+ const n=document.getElementById('pw-new').value;
+ const c=document.getElementById('pw-cf').value;
+ if(!o||!n||!c){showToast('⚠ Compila tutti i campi.');return}
+ if(n!==c){showToast('⚠ Le password non coincidono.');return}
+ if(n.length<8){showToast('⚠ Minimo 8 caratteri.');return}
+ ['pw-old','pw-new','pw-cf'].forEach(id=>document.getElementById(id).value='');
+ showToast('✓ Password aggiornata.');
+}
+function doTgl(el,lbl){
+ el.classList.toggle('on');
+ showToast(`${el.classList.contains('on')?'✓':'✕'} ${lbl} ${el.classList.contains('on')?'attivato':'disattivato'}.`);
+}
+
+// ════ TICKER ════
+const tickItems=AIS.slice(0,18).map(a=>`<div class="tick-item"><span>${a.ico}</span>${a.n}<span class="tick-sep">·</span>${a.s}★</div>`);
+document.getElementById('ticker').innerHTML=[...tickItems,...tickItems].join('');
+
+// ════ REVEAL ════
+function observeReveal(){
+ const obs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in')}),{threshold:.08});
+ document.querySelectorAll('.reveal:not(.in)').forEach(el=>obs.observe(el));
+}
+
+// ════ INIT ════
+renderWallet();
+renderDir();
+observeReveal();
+</script>
+</body>
+</html>
