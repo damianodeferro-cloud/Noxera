@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Noxera — AI Portfolio</title>
@@ -1352,6 +1355,35 @@ function observeReveal(){
 renderWallet();
 renderDir();
 observeReveal();
+</script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+
+<script>
+// Config Firebase
+const NOXERA_CONFIG = {
+  firebase: {
+    apiKey: "AIzaSyD2Qh4mwqXG0jqZOw-OsZQ4UyPuZqmifKw",
+    authDomain: "noxera-491715.firebaseapp.com",
+    projectId: "noxera-491715"
+  }
+};
+
+// Init Firebase
+if (typeof firebase !== "undefined") {
+  if (!firebase.apps.length) {
+    firebase.initializeApp(NOXERA_CONFIG.firebase);
+  }
+
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  console.log("🔥 Firebase pronto");
+} else {
+  console.error("❌ Firebase NON caricato");
+}
 </script>
 </body>
 </html>
