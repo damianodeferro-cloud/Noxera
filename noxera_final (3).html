@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Noxera — Il tuo portafoglio AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=General+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<!-- Stripe SDK -->
+<script src="https://js.stripe.com/v3/"></script>
+
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+:root{
+  --bg:#02040a;--bg2:#040810;--bg3:#060c18;--bg4:#0a1220;--bg5:#0e1a2e;
+  --blue:#4f8ef7;--blue2:#7ab3ff;--cyan:#00d4ff;--cyan2:#80eaff;--purple:#6c5ce7;
+  --bdim:rgba(79,142,247,.12);--cdim:rgba(0,212,255,.1);
+  --white:#f0f6ff;--w2:#b8cde8;--w3:#6e8bb0;--w4:#2e4060;
+  --green:#00cec9;--red:#e17055;--amber:#fdcb6e;--emerald:#00b894;
+  --border:rgba(79,142,247,.1);--border2:rgba(79,142,247,.18);--border3:rgba(0,212,255,.25);
+  --serif:'Clash Display',sans-serif;--sans:'General Sans',sans-serif;
+  --r:12px;--r2:18px;--r3:26px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--white);line-height:1.65;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.025) 2px,rgba(0,0,0,.025) 4px);pointer-events:none;z-index:9997}
+
+/* CURSOR */
+.cursor{width:10px;height:10px;background:var(--cyan);border-radius:50%;position:fixed;pointer-events:none;z-index:99999;transition:transform .1s;mix-blend-mode:screen;box-shadow:0 0 14px var(--cyan);transform:translate(-50%,-50%)}
+.cursor-ring{width:34px;height:34px;border:1px solid rgba(0,212,255,.35);border-radius:50%;position:fixed;pointer-events:none;z-index:99998;transition:all .1s;transform:translate(-50%,-50%)}
+
+/* LOADING SCREEN */
+#loading{position:fixed;inset:0;background:var(--bg);z-index:99990;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .5s}
+#loading.hidden{opacity:0;pointer-events:none}
+.load-logo{font-family:var(--serif);font-size:32px;font-weight:700;letter-spacing:4px;color:var(--white)}
+.load-bar-wrap{width:200px;height:2px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.load-bar{height:100%;background:linear-gradient(to right,var(--blue),var(--cyan));border-radius:2px;width:0%;transition:width .1s}
+.load-txt{font-size:11px;color:var(--w4);letter-spacing:2px;text-transform:uppercase}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 52px;background:rgba(2,4,10,.85);backdrop-filter:blur(32px);border-bottom:1px solid var(--border)}
+nav::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;background:linear-gradient(to right,transparent,var(--cyan),transparent);opacity:.2}
+.logo{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+.logo-cube{width:30px;height:30px;position:relative;transform-style:preserve-3d;animation:rotateCube 8s linear infinite}
+.logo-face{position:absolute;width:30px;height:30px;border:1px solid var(--cyan);background:rgba(0,212,255,.04);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:13px;font-weight:700;color:var(--cyan)}
+.logo-face.f{transform:translateZ(15px)}.logo-face.b{transform:rotateY(180deg) translateZ(15px)}
+.logo-face.l{transform:rotateY(-90deg) translateZ(15px)}.logo-face.r{transform:rotateY(90deg) translateZ(15px)}
+.logo-face.t{transform:rotateX(90deg) translateZ(15px)}.logo-face.bo{transform:rotateX(-90deg) translateZ(15px)}
+@keyframes rotateCube{from{transform:rotateX(0) rotateY(0)}to{transform:rotateX(360deg) rotateY(360deg)}}
+.logo-text{font-family:var(--serif);font-size:20px;font-weight:700;letter-spacing:3px;color:var(--white);text-transform:uppercase}
+.nav-links{display:flex;gap:32px;list-style:none}
+.nav-links a{font-size:12px;font-weight:400;letter-spacing:1px;color:var(--w3);text-decoration:none;text-transform:uppercase;transition:color .2s;cursor:pointer;position:relative}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:1px;background:var(--cyan);transform:scaleX(0);transition:transform .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--cyan)}
+.nav-links a:hover::after,.nav-links a.active::after{transform:scaleX(1)}
+.nav-right{display:flex;gap:10px;align-items:center}
+/* nav user state */
+.nav-user{display:none;align-items:center;gap:10px}
+.nav-user.visible{display:flex}
+.nav-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;cursor:pointer;border:1px solid var(--border2)}
+.nav-username{font-size:13px;color:var(--w2);cursor:pointer}
+.nav-logout{font-size:11px;color:var(--w4);cursor:pointer;transition:color .2s;text-transform:uppercase;letter-spacing:.8px}
+.nav-logout:hover{color:var(--red)}
+
+/* BUTTONS */
+.btn{font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:11px 24px;border-radius:var(--r);border:none;cursor:pointer;transition:all .22s;display:inline-flex;align-items:center;gap:8px;text-decoration:none;position:relative;overflow:hidden}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;color:var(--w3);border:1px solid var(--border2)}
+.btn-ghost:hover:not(:disabled){color:var(--white);border-color:var(--border3);background:var(--bdim)}
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#000;box-shadow:0 0 24px rgba(0,212,255,.18)}
+.btn-primary:hover:not(:disabled){box-shadow:0 0 40px rgba(0,212,255,.35);transform:translateY(-1px)}
+.btn-cyan{background:transparent;color:var(--cyan);border:1px solid var(--border3)}
+.btn-cyan:hover:not(:disabled){background:var(--cdim);box-shadow:0 0 20px rgba(0,212,255,.2)}
+.btn-lg{font-size:14px;padding:14px 36px;border-radius:14px}
+.btn-full{width:100%;justify-content:center}
+.btn-sm{padding:7px 16px;font-size:11px}
+.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(225,112,85,.3)}
+.btn-danger:hover{background:rgba(225,112,85,.08)}
+/* loading spinner inside btn */
+.btn-spinner{width:14px;height:14px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+.btn-spinner.light{border-color:rgba(255,255,255,.3);border-top-color:#fff}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* PAGES */
+.page{display:none;min-height:100vh;padding-top:64px;position:relative;z-index:1}
+.page.active{display:block}
+.page-wrap{padding:48px 56px 80px;max-width:1200px;margin:0 auto}
+.page-eyebrow{font-size:11px;color:var(--cyan);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px}
+.page-title{font-family:var(--serif);font-size:clamp(32px,4vw,48px);font-weight:700;color:var(--white);margin-bottom:6px;letter-spacing:-1px}
+.page-sub{font-size:14px;font-weight:300;color:var(--w3)}
+
+/* TOAST */
+.toast{position:fixed;bottom:26px;right:26px;z-index:9999;background:var(--bg4);border:1px solid var(--border3);border-radius:var(--r2);padding:14px 20px;font-size:13px;color:var(--w2);display:flex;align-items:center;gap:10px;transform:translateY(80px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none;max-width:360px;box-shadow:0 0 40px rgba(0,212,255,.08)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-ico{font-size:16px;flex-shrink:0}
+.toast.err{border-color:rgba(225,112,85,.4);background:rgba(14,6,4,.95)}
+.toast.ok{border-color:rgba(0,184,148,.4)}
+
+/* OVERLAY / MODAL */
+.overlay{position:fixed;inset:0;background:rgba(2,4,10,.92);backdrop-filter:blur(16px);z-index:3000;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:linear-gradient(160deg,var(--bg4),var(--bg3));border:1px solid var(--border2);border-radius:var(--r3);padding:40px;width:100%;max-width:480px;position:relative;animation:mup .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 0 80px rgba(79,142,247,.12)}
+.modal.wide{max-width:740px}
+.modal.xl{max-width:1000px;max-height:90vh;overflow-y:auto}
+@keyframes mup{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}
+.modal-x{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--w3);font-size:22px;cursor:pointer;line-height:1;transition:color .2s;z-index:1}
+.modal-x:hover{color:var(--white)}
+.modal-title{font-family:var(--serif);font-size:28px;font-weight:700;color:var(--white);margin-bottom:4px;letter-spacing:-.5px}
+.modal-sub{font-size:13px;font-weight:300;color:var(--w3);margin-bottom:24px}
+
+/* FORMS */
+.fg{display:flex;flex-direction:column;gap:7px;margin-bottom:16px}
+.fl{font-size:11px;color:var(--w4);text-transform:uppercase;letter-spacing:1.1px}
+.fi{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:12px 15px;color:var(--white);font-family:var(--sans);font-size:14px;outline:none;transition:all .2s;width:100%}
+.fi:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.07)}
+.fi::placeholder{color:var(--w4)}
+.fi.err-field{border-color:var(--red)}
+select.fi{cursor:pointer}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field-error{font-size:11px;color:var(--red);margin-top:-10px;margin-bottom:8px}
+
+/* AUTH TABS */
+.auth-tabs{display:flex;background:var(--bg2);border-radius:var(--r);padding:4px;gap:4px;margin-bottom:24px;border:1px solid var(--border)}
+.auth-tab{flex:1;padding:9px;background:transparent;border:none;color:var(--w3);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;border-radius:8px}
+.auth-tab.on{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;box-shadow:0 0 20px rgba(79,142,247,.25)}
+.social-btns{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.social-btn{width:100%;padding:12px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg4);color:var(--w2);font-family:var(--sans);font-size:13px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:500}
+.social-btn:hover:not(:disabled){border-color:var(--border3);background:var(--bg5);color:var(--white)}
+.auth-or{display:flex;align-items:center;gap:12px;margin:14px 0}
+.auth-or::before,.auth-or::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-or span{font-size:11px;color:var(--w4)}
+.forgot{font-size:12px;color:var(--cyan);cursor:pointer;text-align:right;display:block;margin-top:-8px;margin-bottom:14px}
+
+/* HERO */
+.hero{min-height:calc(100vh - 64px);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px 48px 60px;overflow:hidden}
+#hero-canvas{position:absolute;inset:0;pointer-events:none}
+.hero-hud{position:absolute;top:16px;left:20px;right:20px;display:flex;justify-content:space-between;opacity:.3;pointer-events:none}
+.hud-txt{font-size:9px;color:var(--cyan);letter-spacing:2px;text-transform:uppercase;font-family:monospace}
+.hero-content{position:relative;z-index:2}
+.hero-badge{display:inline-flex;align-items:center;gap:9px;background:rgba(0,212,255,.07);border:1px solid var(--border3);color:var(--cyan);font-size:11px;padding:7px 18px;border-radius:100px;margin-bottom:36px;letter-spacing:1.5px;text-transform:uppercase}
+.badge-pulse{width:6px;height:6px;background:var(--cyan);border-radius:50%;animation:bpulse 2s infinite;box-shadow:0 0 8px var(--cyan)}
+@keyframes bpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
+.hero h1{font-family:var(--serif);font-size:clamp(52px,8.5vw,112px);font-weight:700;line-height:.95;letter-spacing:-3px;color:var(--white);margin-bottom:10px}
+.glow-word{background:linear-gradient(135deg,var(--blue2) 0%,var(--cyan) 50%,var(--cyan2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 28px rgba(0,212,255,.35))}
+.sub-line{display:block;font-size:clamp(13px,1.8vw,20px);font-weight:300;letter-spacing:8px;color:var(--w3);margin-top:14px;-webkit-text-fill-color:var(--w3);font-family:var(--sans)}
+.hero-p{font-size:17px;font-weight:300;color:var(--w3);max-width:540px;margin:28px auto 44px;line-height:1.8}
+.hero-p b{color:var(--blue2);font-weight:500}
+.hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:64px}
+.float-cards{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.fcard{background:linear-gradient(145deg,rgba(13,26,56,.92),rgba(6,12,24,.96));border:1px solid var(--border2);border-radius:var(--r2);padding:18px 22px;backdrop-filter:blur(20px);min-width:152px;text-align:center;animation:floatC 4s ease-in-out infinite;box-shadow:0 20px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.04)}
+.fcard:nth-child(2){animation-delay:.6s}.fcard:nth-child(3){animation-delay:1.2s}.fcard:nth-child(4){animation-delay:1.8s}
+@keyframes floatC{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.fcard-ico{font-size:24px;margin-bottom:8px}
+.fcard-val{font-family:var(--serif);font-size:26px;font-weight:700;color:var(--white);letter-spacing:-1px}
+.fcard-val b{color:var(--cyan)}
+.fcard-lbl{font-size:10px;color:var(--w4);text-transform:uppercase;letter-spacing:1.2px;margin-top:3px}
+
+/* TICKER */
+.ticker-strip{overflow:hidden;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 0;background:rgba(4,8,16,.5);position:relative;margin-top:56px}
+.ticker-strip::before,.ticker-strip::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:2;pointer-events:none}
+.ticker-strip::before{left:0;background:linear-gradient(to right,var(--bg),transparent)}
+.ticker-strip::after{right:0;background:linear-gradient(to left,var(--bg),transparent)}
+.ticker-inner{display:flex;animation:tick 28s linear infinite;width:max-content}
+.tick-item{display:flex;align-items:center;gap:7px;padding:0 24px;font-size:11px;color:var(--w4);letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.tick-sep{color:var(--cyan);opacity:.4}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* FEATURES */
+.feat-section{padding:88px 56px;max-width:1200px;margin:0 auto}
+.s-eye{font-size:11px;color:var(--cyan);letter-spacing:3px;text-transform:uppercase;margin-bottom:12px}
+.s-title{font-family:var(--serif);font-size:clamp(28px,3.5vw,44px);font-weight:700;color:var(--white);margin-bottom:10px;letter-spacing:-1px}
+.s-sub{font-size:15px;font-weight:300;color:var(--w3);max-width:480px;margin-bottom:52px}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--border);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
+.feat-card{background:var(--bg3);padding:34px 26px;transition:background .25s;cursor:pointer;position:relative;overflow:hidden}
+.feat-card:hover{background:var(--bg4)}
+.feat-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(0,212,255,.05),transparent 70%);opacity:0;transition:opacity .3s}
+.feat-card:hover::before{opacity:1}
+.feat-ico{width:46px;height:46px;border-radius:12px;background:var(--bdim);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:16px}
+.feat-name{font-family:var(--serif);font-size:19px;font-weight:700;color:var(--white);margin-bottom:7px}
+.feat-desc{font-size:13px;font-weight:300;color:var(--w3);line-height:1.65}
+.feat-link{display:inline-flex;align-items:center;gap:6px;color:var(--cyan);font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-top:14px;transition:gap .2s}
+.feat-card:hover .feat-link{gap:10px}
+
+/* STEPS */
+.steps-section{padding:80px 56px;max-width:1200px;margin:0 auto}
+.steps-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative}
+.steps-row::before{content:'';position:absolute;top:26px;left:8%;right:8%;height:1px;background:linear-gradient(to right,transparent,rgba(0,212,255,.3) 20%,rgba(0,212,255,.3) 80%,transparent)}
+.step-card-home{text-align:center;padding:0 18px}
+.step-num{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:20px;font-weight:700;color:#fff;margin:0 auto 14px;box-shadow:0 0 28px rgba(79,142,247,.3);position:relative;z-index:1}
+.step-title-h{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--white);margin-bottom:7px}
+.step-desc-h{font-size:12px;font-weight:300;color:var(--w3);line-height:1.65}
+
+/* WALLET PAGE */
+.wallet-hero{background:linear-gradient(160deg,var(--bg4),var(--bg2));border-radius:var(--r3);border:1px solid var(--border2);padding:36px;margin-bottom:24px;position:relative;overflow:hidden}
+.wallet-hero::before{content:'';position:absolute;top:-80px;right:-80px;width:280px;height:280px;background:radial-gradient(circle,rgba(79,142,247,.14),transparent 70%);pointer-events:none}
+.wh-label{font-size:12px;color:var(--w3);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
+.wh-total{font-family:var(--serif);font-size:56px;font-weight:700;color:var(--white);letter-spacing:-3px;line-height:1}
+.wh-total small{font-size:22px;color:var(--w3);font-weight:300;font-family:var(--sans)}
+.wh-saving{display:inline-flex;align-items:center;gap:7px;background:rgba(0,206,201,.08);border:1px solid rgba(0,206,201,.2);color:var(--green);font-size:12px;padding:5px 14px;border-radius:100px;margin-top:10px}
+.wh-stats{display:flex;gap:32px;margin-top:24px}
+.whs-val{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--white)}
+.whs-val.c{color:var(--cyan)}
+.whs-lbl{font-size:10px;color:var(--w4);text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+.wallet-layout{display:grid;grid-template-columns:1fr 305px;gap:20px}
+.subs-label{font-size:12px;color:var(--w3);text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.subs-label span{color:var(--cyan);cursor:pointer;font-size:11px;transition:color .2s}
+.subs-label span:hover{color:var(--cyan2)}
+.sub-cards{display:flex;flex-direction:column;gap:11px}
+.swc{border-radius:var(--r2);padding:22px 24px;position:relative;overflow:hidden;cursor:pointer;transition:transform .25s,box-shadow .25s}
+.swc:hover{transform:translateY(-3px) scale(1.005);box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.swc::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.07),transparent 50%);pointer-events:none}
+.swc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px}
+.swc-brand{display:flex;align-items:center;gap:11px}
+.swc-ico{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:19px;backdrop-filter:blur(10px)}
+.swc-name{font-family:var(--serif);font-size:17px;font-weight:700;color:#fff}
+.swc-plan{font-size:11px;opacity:.65;margin-top:2px}
+.swc-price{text-align:right}
+.swc-amount{font-family:var(--serif);font-size:22px;font-weight:700;color:#fff}
+.swc-cycle{font-size:10px;opacity:.55;margin-top:1px}
+.swc-bottom{display:flex;justify-content:space-between;align-items:center}
+.swc-renew{font-size:11px;opacity:.6;color:#fff}
+.swc-disc{background:rgba(255,255,255,.15);backdrop-filter:blur(10px);padding:3px 10px;border-radius:100px;font-size:10px;font-weight:700;color:#fff}
+.swc-btns{display:flex;gap:6px;margin-top:12px}
+.swc-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:8px;color:#fff;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:5px 12px;cursor:pointer;transition:background .2s;font-family:var(--sans)}
+.swc-btn:hover{background:rgba(255,255,255,.22)}
+.swc-btn.del{color:rgba(255,100,80,1);border-color:rgba(255,100,80,.35)}
+.swc-btn.del:hover{background:rgba(255,80,50,.2)}
+.empty-wallet{text-align:center;padding:48px 24px;color:var(--w4);font-size:14px}
+.empty-wallet .e-ico{font-size:40px;margin-bottom:14px;opacity:.4}
+/* wallet sidebar */
+.ws{display:flex;flex-direction:column;gap:13px}
+.sc{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:19px}
+.sc-title{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--w4);margin-bottom:13px}
+.bars{display:flex;gap:4px;align-items:flex-end;height:52px;margin-bottom:8px}
+.bar{flex:1;background:var(--bg5);border-radius:4px 4px 0 0;transition:background .2s;cursor:pointer}
+.bar:hover,.bar.on{background:linear-gradient(to top,var(--blue),var(--cyan))}
+.bar-lbls{display:flex;gap:4px}
+.bar-lbls span{flex:1;text-align:center;font-size:9px;color:var(--w4);text-transform:uppercase}
+.ren-list{display:flex;flex-direction:column;gap:10px}
+.ren-item{display:flex;justify-content:space-between;align-items:center}
+.ren-left{display:flex;align-items:center;gap:8px}
+.ren-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 5px var(--cyan)}
+.ren-name{font-size:13px;color:var(--w2)}
+.ren-date{font-size:10px;color:var(--w4)}
+.ren-amt{font-size:13px;font-weight:600;color:var(--white)}
+.tip-box{background:linear-gradient(135deg,var(--bdim),rgba(0,212,255,.04));border:1px solid var(--border3);border-radius:var(--r2);padding:19px}
+.tip-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--cyan);margin-bottom:8px}
+.tip-text{font-size:13px;font-weight:300;color:var(--w3);line-height:1.55;margin-bottom:14px}
+
+/* DIRECTORY */
+.dir-bar{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;align-items:center}
+.search-wrap{flex:1;min-width:200px;position:relative}
+.search-wrap::before{content:'⌕';position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--w4);font-size:16px;pointer-events:none}
+.dir-search{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px 10px 38px;color:var(--white);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .2s}
+.dir-search:focus{border-color:var(--cyan)}
+.dir-search::placeholder{color:var(--w4)}
+.filter-pills{display:flex;gap:7px;flex-wrap:wrap}
+.fpill{background:transparent;border:1px solid var(--border2);color:var(--w3);font-family:var(--sans);font-size:11px;letter-spacing:.8px;text-transform:uppercase;padding:7px 15px;border-radius:100px;cursor:pointer;transition:all .2s}
+.fpill:hover,.fpill.on{background:linear-gradient(135deg,var(--blue),var(--purple));border-color:transparent;color:#fff}
+.cmp-bar{background:var(--bg4);border:1px solid var(--border3);border-radius:var(--r2);padding:12px 18px;display:none;align-items:center;gap:12px;margin-bottom:18px}
+.cmp-bar.show{display:flex}
+.cslot{min-width:90px;height:28px;border:1px dashed var(--border3);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--w4)}
+.cslot.filled{background:var(--bdim);border-color:var(--blue);color:var(--blue2)}
+.ai-count-txt{font-size:12px;color:var(--w4);margin-bottom:14px}
+.ai-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(275px,1fr));gap:13px}
+.ai-card{background:linear-gradient(145deg,var(--bg3),var(--bg2));border:1px solid var(--border);border-radius:var(--r2);padding:21px;cursor:pointer;transition:all .22s;position:relative;overflow:hidden}
+.ai-card:hover{border-color:var(--border3);transform:translateY(-3px);box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.aic-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.aic-ico{width:42px;height:42px;border-radius:10px;background:var(--bg5);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:20px}
+.aic-badges{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.badge{font-size:10px;padding:3px 9px;border-radius:100px;font-weight:600;letter-spacing:.5px}
+.badge-hot{background:rgba(225,112,85,.12);color:var(--red);border:1px solid rgba(225,112,85,.3)}
+.badge-new{background:rgba(108,92,231,.12);color:#a29bfe;border:1px solid rgba(108,92,231,.3)}
+.badge-free{background:rgba(0,184,148,.1);color:var(--emerald);border:1px solid rgba(0,184,148,.25)}
+.aic-name{font-family:var(--serif);font-size:18px;font-weight:700;color:var(--white)}
+.aic-cat{font-size:10px;color:var(--w4);text-transform:uppercase;letter-spacing:1px;margin-top:2px;margin-bottom:9px}
+.aic-desc{font-size:12px;font-weight:300;color:var(--w3);line-height:1.5;margin-bottom:11px}
+.aic-pc{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px}
+.pc{font-size:11px;color:var(--w3);display:flex;gap:4px;align-items:flex-start}
+.pc.pro .ps{color:var(--emerald)}.pc.con .ps{color:var(--red)}
+.ps{flex-shrink:0;font-size:10px;margin-top:1px}
+.aic-foot{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid var(--border)}
+.stars{color:var(--amber);font-size:11px}
+.score{font-size:13px;font-weight:700;color:var(--white);margin-left:3px}
+.aic-price{font-size:12px;color:var(--w3)}
+.aic-price b{color:var(--blue2)}
+.aic-btns{display:flex;gap:6px;margin-top:9px}
+.acb{flex:1;padding:7px 0;border-radius:8px;font-family:var(--sans);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;text-align:center;border:1px solid var(--border2);background:transparent;color:var(--w3);letter-spacing:.5px;text-transform:uppercase}
+.acb:hover{background:var(--bg5);color:var(--white)}
+.acb.add{border-color:var(--border3);color:var(--cyan)}
+.acb.add:hover{background:var(--cdim)}
+.acb.cmp.sel{border-color:var(--border2);color:var(--blue2);background:var(--bdim)}
+
+/* DETAIL MODAL */
+.d-head{display:flex;gap:18px;margin-bottom:20px}
+.d-ico{width:62px;height:62px;border-radius:14px;background:var(--bg5);display:flex;align-items:center;justify-content:center;font-size:28px;border:1px solid var(--border3);box-shadow:0 0 24px rgba(0,212,255,.08)}
+.d-name{font-family:var(--serif);font-size:28px;font-weight:700;color:var(--white);letter-spacing:-.5px}
+.d-cat{font-size:11px;color:var(--w4);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.d-body{display:grid;grid-template-columns:1fr 230px;gap:20px}
+.d-desc{font-size:14px;font-weight:300;color:var(--w2);line-height:1.75;margin-bottom:14px}
+.d-sec{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--white);margin:14px 0 9px}
+.d-feats{display:flex;flex-direction:column;gap:7px}
+.d-feat{display:flex;gap:8px;font-size:13px;color:var(--w3)}
+.d-feat::before{content:'→';color:var(--cyan);flex-shrink:0}
+.d-pc{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.d-pc-item{background:var(--bg4);border-radius:9px;padding:9px 12px;font-size:12px}
+.d-pc-item.pro{border:1px solid rgba(0,184,148,.2);color:var(--emerald)}
+.d-pc-item.con{border:1px solid rgba(225,112,85,.2);color:var(--red)}
+.d-price{background:var(--bg4);border:1px solid var(--border3);border-radius:var(--r2);padding:20px;margin-bottom:12px}
+.dp-lbl{font-size:10px;color:var(--w4);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.dp-price{font-family:var(--serif);font-size:26px;font-weight:700;color:var(--white)}
+.dp-noxera{font-size:12px;color:var(--emerald);margin-top:4px}
+
+/* PAYMENT MODAL */
+.pay-tabs{display:flex;background:var(--bg2);border-radius:var(--r);padding:4px;gap:4px;margin-bottom:20px;border:1px solid var(--border)}
+.pay-tab{flex:1;padding:9px;background:transparent;border:none;color:var(--w3);font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;border-radius:8px;text-transform:uppercase;letter-spacing:.8px}
+.pay-tab.on{background:var(--bg5);color:var(--white);border-bottom:2px solid var(--cyan)}
+.pay-sec{display:none}
+.pay-sec.on{display:block}
+.plan-sum{background:var(--bg4);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:18px}
+.ps-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;color:var(--w3)}
+.ps-row.total{border-top:1px solid var(--border);padding-top:10px;margin-top:6px;font-weight:700;color:var(--white)}
+.ps-row.total span:last-child{color:var(--cyan)}
+.card-brands{display:flex;gap:6px;margin-bottom:14px}
+.card-brand{width:36px;height:22px;background:var(--bg5);border:1px solid var(--border2);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--w4);font-weight:700}
+#stripe-card-element{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:14px;margin-bottom:14px;transition:border-color .2s}
+#stripe-card-element.focused{border-color:var(--cyan)}
+.pp-btn{width:100%;padding:14px;border-radius:var(--r);border:none;background:linear-gradient(135deg,#003087,#009cde);color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s;font-family:var(--sans)}
+.pp-btn:hover{opacity:.9}
+.secure-note{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--w4);margin-top:12px;justify-content:center}
+#payment-error{color:var(--red);font-size:12px;margin-bottom:10px;min-height:16px}
+
+/* PLANS */
+.plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:44px}
+.plan{background:linear-gradient(145deg,var(--bg3),var(--bg2));border:1px solid var(--border);border-radius:var(--r3);padding:30px 24px;display:flex;flex-direction:column;position:relative;overflow:hidden;transition:transform .22s}
+.plan:hover{transform:translateY(-3px)}
+.plan.feat{border-color:var(--border3);box-shadow:0 0 50px rgba(0,212,255,.06)}
+.plan.feat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,var(--cyan),transparent)}
+.plan-badge{position:absolute;top:14px;right:14px}
+.plan-ico{font-size:26px;margin-bottom:12px}
+.plan-name{font-family:var(--serif);font-size:21px;font-weight:700;color:var(--white);margin-bottom:4px}
+.plan-price{font-family:var(--serif);font-size:32px;font-weight:700;color:var(--cyan);letter-spacing:-1px}
+.plan-price span{font-size:13px;color:var(--w3);font-weight:300;font-family:var(--sans)}
+.plan-desc{font-size:13px;font-weight:300;color:var(--w3);margin:10px 0 15px;line-height:1.6}
+.plan-feats{list-style:none;flex:1;display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.plan-feats li{font-size:13px;color:var(--w3);display:flex;gap:7px;align-items:flex-start}
+.plan-feats li::before{content:'→';color:var(--cyan);flex-shrink:0}
+.plan-btn{width:100%;padding:12px;border-radius:var(--r);font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;transition:all .22s;border:1px solid var(--border2);background:transparent;color:var(--w2)}
+.plan-btn:hover{background:var(--bg5);color:var(--white)}
+.plan.feat .plan-btn{background:linear-gradient(135deg,var(--blue),var(--cyan));border-color:transparent;color:#000;box-shadow:0 0 28px rgba(0,212,255,.18)}
+.plan.feat .plan-btn:hover{box-shadow:0 0 44px rgba(0,212,255,.32);transform:translateY(-1px)}
+.ctable{width:100%;border-collapse:collapse}
+.ctable th,.ctable td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--border);font-size:12px}
+.ctable th{color:var(--w4);font-weight:400;text-transform:uppercase;letter-spacing:1px;font-size:10px;background:var(--bg3)}
+.ctable td:first-child{color:var(--w2)}
+.ctable td:not(:first-child){text-align:center}
+.ctable .chk{color:var(--emerald)}.ctable .x{color:var(--w4)}.ctable .val{color:var(--cyan);font-weight:700}
+.ctable tr:hover td{background:var(--bg3)}
+
+/* ADVISOR */
+.adv-wrap{padding:40px 56px 80px;max-width:900px;margin:0 auto}
+.adv-card{background:linear-gradient(135deg,var(--bdim),rgba(0,212,255,.04));border:1px solid var(--border3);border-radius:var(--r3);padding:26px;margin-bottom:20px;display:flex;align-items:center;gap:20px}
+.adv-av{width:58px;height:58px;border-radius:14px;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;border:1px solid var(--border2);box-shadow:0 0 28px rgba(79,142,247,.25)}
+.adv-name{font-family:var(--serif);font-size:21px;font-weight:700;color:var(--white);letter-spacing:-.5px}
+.adv-online{font-size:12px;color:var(--emerald);display:flex;align-items:center;gap:5px;margin-top:4px}
+.adv-dot{width:6px;height:6px;background:var(--emerald);border-radius:50%;box-shadow:0 0 7px var(--emerald);animation:bpulse 2s infinite}
+.adv-desc{font-size:13px;font-weight:300;color:var(--w3);margin-top:5px;line-height:1.6}
+.chat-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r3);overflow:hidden}
+.chat-msgs{padding:24px;min-height:280px;max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+.chat-msgs::-webkit-scrollbar{width:3px}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.cmsg{display:flex;gap:10px;animation:mup .3s ease}
+.cmsg.user{flex-direction:row-reverse;align-self:flex-end;max-width:76%}
+.cmsg.ai{max-width:84%}
+.cmsg-av{width:30px;height:30px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
+.cmsg-av.ai{background:linear-gradient(135deg,var(--blue),var(--purple))}
+.cmsg-av.user{background:var(--bg5);border:1px solid var(--border2)}
+.cmsg-bub{padding:10px 14px;border-radius:11px;font-size:13px;font-weight:300;line-height:1.6}
+.cmsg.ai .cmsg-bub{background:var(--bg4);border:1px solid var(--border);border-bottom-left-radius:3px;color:var(--w2)}
+.cmsg.user .cmsg-bub{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;font-weight:500;border-bottom-right-radius:3px}
+.cmsg.ai .cmsg-bub strong{color:var(--cyan);font-weight:500}
+.chat-chips{display:flex;flex-wrap:wrap;gap:7px;padding:12px 24px;border-top:1px solid var(--border)}
+.chip{background:transparent;border:1px solid var(--border2);color:var(--w3);font-family:var(--sans);font-size:11px;padding:7px 13px;border-radius:100px;cursor:pointer;transition:all .2s}
+.chip:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cdim)}
+.chat-foot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border);background:var(--bg4)}
+.chat-inp{flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:11px 14px;color:var(--white);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .2s}
+.chat-inp:focus{border-color:var(--cyan)}
+.chat-inp::placeholder{color:var(--w4)}
+.chat-send{background:linear-gradient(135deg,var(--blue),var(--purple));border:none;border-radius:var(--r);width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:17px;transition:opacity .2s;flex-shrink:0}
+.chat-send:hover{opacity:.85}
+.typing{display:flex;gap:4px;align-items:center;padding:3px 0}
+.typing span{width:6px;height:6px;background:var(--w4);border-radius:50%;animation:tdot 1.2s ease-in-out infinite}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes tdot{0%,80%,100%{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:1}}
+
+/* ACCOUNT */
+.acc-layout{display:grid;grid-template-columns:230px 1fr;gap:20px}
+.acc-side{display:flex;flex-direction:column;gap:12px}
+.acc-profile{background:linear-gradient(145deg,var(--bg4),var(--bg3));border:1px solid var(--border3);border-radius:var(--r2);padding:22px;text-align:center}
+.acc-av{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px;border:2px solid var(--border3);box-shadow:0 0 28px rgba(79,142,247,.22)}
+.acc-name{font-family:var(--serif);font-size:17px;font-weight:700;color:var(--white)}
+.acc-email{font-size:11px;color:var(--w4);margin-top:3px}
+.acc-plan-tag{display:inline-flex;align-items:center;gap:5px;background:var(--bdim);border:1px solid var(--border2);color:var(--blue2);font-size:10px;padding:4px 11px;border-radius:100px;margin-top:10px}
+.acc-menu{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
+.acc-mi{display:flex;align-items:center;gap:10px;padding:12px 15px;border-bottom:1px solid var(--border);font-size:13px;color:var(--w3);cursor:pointer;transition:all .2s}
+.acc-mi:last-child{border-bottom:none}
+.acc-mi:hover,.acc-mi.on{background:var(--bg4);color:var(--cyan)}
+.acc-mi .ico{font-size:14px}
+.acc-main{display:flex;flex-direction:column;gap:16px}
+.acc-sec{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:20px}
+.acc-sec-title{font-family:var(--serif);font-size:16px;font-weight:700;color:var(--white);margin-bottom:14px;padding-bottom:11px;border-bottom:1px solid var(--border)}
+.tgl-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.tgl-row:last-child{border-bottom:none}
+.tgl-lbl{font-size:13px;color:var(--w2)}
+.tgl-sub{font-size:11px;color:var(--w4);margin-top:2px}
+.tgl{width:40px;height:21px;background:var(--bg5);border-radius:11px;position:relative;cursor:pointer;border:1px solid var(--border2);transition:all .22s;flex-shrink:0}
+.tgl.on{background:linear-gradient(135deg,var(--blue),var(--cyan));border-color:transparent;box-shadow:0 0 10px rgba(79,142,247,.28)}
+.tgl::after{content:'';width:15px;height:15px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.tgl.on::after{transform:translateX(19px)}
+
+/* FOOTER */
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:52px 56px 26px;position:relative;z-index:1}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:44px;margin-bottom:36px}
+.f-logo{font-family:var(--serif);font-size:19px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--white);margin-bottom:9px}
+.f-desc{font-size:13px;font-weight:300;color:var(--w4);line-height:1.7;max-width:240px}
+.f-col h5{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:2px;color:var(--w3);margin-bottom:13px}
+.f-col a{display:block;font-size:13px;font-weight:300;color:var(--w4);text-decoration:none;margin-bottom:8px;transition:color .2s;cursor:pointer}
+.f-col a:hover{color:var(--blue2)}
+.footer-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:18px;border-top:1px solid var(--border)}
+.footer-bottom p{font-size:11px;color:var(--w4)}
+
+/* UTILS */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .5s,transform .5s}
+.reveal.in{opacity:1;transform:none}
+.mt4{margin-top:16px}
+.cyan-sep{width:100%;height:1px;background:linear-gradient(to right,transparent,rgba(0,212,255,.28),transparent);margin:22px 0}
+
+@media(max-width:768px){
+  nav{padding:0 16px}
+  .nav-links{display:none}
+  .hero h1{font-size:46px}
+  .wallet-layout,.acc-layout{grid-template-columns:1fr}
+  .plans-grid,.feat-grid,.steps-row{grid-template-columns:1fr}
+  .d-body{grid-template-columns:1fr}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:28px}
+  .page-wrap,.adv-wrap,.feat-section,.steps-section{padding-left:18px;padding-right:18px}
+  footer{padding:38px 18px 22px}
+}
+</style>
+</head>
+<body>
+
+<!-- ── CURSOR ── -->
+<div class="cursor" id="cur"></div>
+<div class="cursor-ring" id="ring"></div>
+
+<!-- ── LOADING ── -->
+<div id="loading">
+  <div class="load-logo">NOXERA</div>
+  <div class="load-bar-wrap"><div class="load-bar" id="load-bar"></div></div>
+  <div class="load-txt" id="load-txt">Inizializzazione...</div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"><span class="toast-ico" id="toast-ico">◈</span><span id="toast-txt"></span></div>
+
+<!-- ══════════════════════════════════════
+     MODALS
+══════════════════════════════════════ -->
+
+<!-- AUTH -->
+<div class="overlay" id="auth-ov">
+ <div class="modal">
+  <button class="modal-x" onclick="closeM('auth-ov')">×</button>
+  <div class="modal-title">Benvenuto in Noxera</div>
+  <div class="modal-sub">Accedi al tuo portafoglio AI personale</div>
+  <div class="auth-tabs">
+   <button class="auth-tab on" id="tab-login" onclick="authTab('login')">Accedi</button>
+   <button class="auth-tab" id="tab-reg" onclick="authTab('reg')">Registrati</button>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="pane-login">
+   <div class="social-btns">
+    <button class="social-btn" id="btn-google-login" onclick="googleAuth()">
+     <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+     Continua con Google
+    </button>
+   </div>
+   <div class="auth-or"><span>oppure</span></div>
+   <div class="fg"><div class="fl">Email</div><input class="fi" type="email" id="l-email" placeholder="tua@email.com"></div>
+   <div class="fg"><div class="fl">Password</div><input class="fi" type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')emailLogin()"></div>
+   <div id="login-err" class="field-error"></div>
+   <a class="forgot" onclick="sendReset()">Password dimenticata?</a>
+   <button class="btn btn-primary btn-full" id="btn-email-login" onclick="emailLogin()">Accedi →</button>
+   <p style="font-size:11px;color:var(--w4);text-align:center;margin-top:12px">🔒 Autenticazione Firebase · Crittografia AES-256</p>
+  </div>
+
+  <!-- REGISTER -->
+  <div id="pane-reg" style="display:none">
+   <div class="social-btns">
+    <button class="social-btn" id="btn-google-reg" onclick="googleAuth()">
+     <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+     Registrati con Google
+    </button>
+   </div>
+   <div class="auth-or"><span>oppure</span></div>
+   <div class="frow">
+    <div class="fg" style="margin-bottom:0"><div class="fl">Nome</div><input class="fi" id="r-nome" placeholder="Marco"></div>
+    <div class="fg" style="margin-bottom:0"><div class="fl">Cognome</div><input class="fi" id="r-cog" placeholder="Rossi"></div>
+   </div>
+   <div class="fg" style="margin-top:14px"><div class="fl">Email</div><input class="fi" type="email" id="r-email" placeholder="tua@email.com"></div>
+   <div class="fg"><div class="fl">Password</div><input class="fi" type="password" id="r-pass" placeholder="min. 8 caratteri"></div>
+   <div class="fg"><div class="fl">Settore professionale</div>
+    <select class="fi" id="r-settore">
+     <option value="design">Design</option><option value="marketing">Marketing</option>
+     <option value="sviluppo">Sviluppo</option><option value="ecommerce">E-commerce</option>
+     <option value="copywriting">Copywriting</option><option value="video">Video / Musica</option>
+     <option value="altro">Altro</option>
+    </select>
+   </div>
+   <div id="reg-err" class="field-error"></div>
+   <button class="btn btn-primary btn-full" id="btn-email-reg" onclick="emailRegister()">Crea account gratuito →</button>
+   <p style="font-size:11px;color:var(--w4);text-align:center;margin-top:12px">Accetti i <span style="color:var(--cyan);cursor:pointer">Termini</span> e la <span style="color:var(--cyan);cursor:pointer">Privacy Policy</span></p>
+  </div>
+ </div>
+</div>
+
+<!-- ADD SUB -->
+<div class="overlay" id="addsub-ov">
+ <div class="modal">
+  <button class="modal-x" onclick="closeM('addsub-ov')">×</button>
+  <div class="modal-title">Aggiungi abbonamento</div>
+  <div class="modal-sub">Il prezzo appare automaticamente</div>
+  <div class="fg"><div class="fl">Servizio AI</div>
+   <select class="fi" id="sub-sel" onchange="updateSubPrice()">
+    <option value="">— Scegli un servizio —</option>
+    <option value="20|ChatGPT Plus|OpenAI|🤖|10%|€18/mese">ChatGPT Plus — OpenAI</option>
+    <option value="18|Claude Pro|Anthropic|✦|5%|€17.10/mese">Claude Pro — Anthropic</option>
+    <option value="9.60|Midjourney|Midjourney|🎨|20%|€7.68/mese">Midjourney</option>
+    <option value="35|Runway ML|Runway|🎬|15%|€29.75/mese">Runway ML</option>
+    <option value="7|Suno AI|Suno|🎵|8%|€6.44/mese">Suno AI</option>
+    <option value="17|Perplexity Pro|Perplexity|🔍|10%|€15.30/mese">Perplexity Pro</option>
+    <option value="10|GitHub Copilot|GitHub|💻|5%|€9.50/mese">GitHub Copilot</option>
+    <option value="19|Cursor Pro|Cursor|⌨️|5%|€18.05/mese">Cursor Pro</option>
+    <option value="11|ElevenLabs|ElevenLabs|🔊|10%|€9.90/mese">ElevenLabs</option>
+    <option value="14|Canva AI|Canva|🎯|5%|€13.29/mese">Canva AI</option>
+    <option value="8|Notion AI|Notion|📝|5%|€7.60/mese">Notion AI</option>
+    <option value="12|Grammarly|Grammarly|📐|5%|€11.40/mese">Grammarly</option>
+    <option value="7.49|DeepL Pro|DeepL|🌍|5%|€7.12/mese">DeepL Pro</option>
+    <option value="20|Zapier AI|Zapier|⚡|10%|€17.99/mese">Zapier AI</option>
+    <option value="0|Altro (manuale)|—|⚙️|0%|—">Altro (manuale)</option>
+   </select>
+  </div>
+  <div id="sub-disc-info" style="display:none;background:rgba(0,184,148,.07);border:1px solid rgba(0,184,148,.2);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--emerald)"></div>
+  <div class="frow">
+   <div class="fg" style="margin-bottom:0"><div class="fl">Prezzo €/mese</div><input class="fi" type="number" id="sub-price" placeholder="0.00" step="0.01"></div>
+   <div class="fg" style="margin-bottom:0"><div class="fl">Ciclo</div><select class="fi" id="sub-cycle"><option>Mensile</option><option>Annuale</option></select></div>
+  </div>
+  <div class="fg" style="margin-top:14px"><div class="fl">Prossimo rinnovo</div><input class="fi" type="date" id="sub-date"></div>
+  <button class="btn btn-primary btn-full" style="margin-top:6px" id="btn-add-sub" onclick="confirmAddSub()">Aggiungi al portafoglio →</button>
+ </div>
+</div>
+
+<!-- PAYMENT -->
+<div class="overlay" id="pay-ov">
+ <div class="modal wide">
+  <button class="modal-x" onclick="closeM('pay-ov')">×</button>
+  <div class="modal-title">Completa il pagamento</div>
+  <div class="modal-sub" id="pay-desc">Attivazione piano Noxera</div>
+  <div class="plan-sum">
+   <div class="ps-row"><span>Piano</span><span id="psum-plan">—</span></div>
+   <div class="ps-row"><span>Prezzo</span><span id="psum-base">—</span></div>
+   <div class="ps-row total"><span>Totale</span><span id="psum-total">—</span></div>
+  </div>
+  <div class="pay-tabs">
+   <button class="pay-tab on" onclick="payTab('stripe',this)">💳 Carta</button>
+   <button class="pay-tab" onclick="payTab('paypal',this)">🅿️ PayPal</button>
+  </div>
+  <div class="pay-sec on" id="ps-stripe">
+   <div class="card-brands"><div class="card-brand">VISA</div><div class="card-brand">MC</div><div class="card-brand">AMEX</div></div>
+   <div id="stripe-card-element"></div>
+   <div id="payment-error"></div>
+   <button class="btn btn-primary btn-full" id="btn-pay-stripe" onclick="submitStripePayment()">Paga ora →</button>
+  </div>
+  <div class="pay-sec" id="ps-paypal">
+   <p style="font-size:13px;font-weight:300;color:var(--w3);margin-bottom:20px;line-height:1.6">Verrai reindirizzato su PayPal per completare il pagamento. Nessun dato carta su Noxera.</p>
+   <button class="pp-btn" onclick="submitPayPal()">Paga con PayPal</button>
+  </div>
+  <div class="secure-note">🔒 Pagamento sicuro via Stripe · SSL 256-bit</div>
+ </div>
+</div>
+
+<!-- AI DETAIL -->
+<div class="overlay" id="detail-ov">
+ <div class="modal xl">
+  <button class="modal-x" onclick="closeM('detail-ov')">×</button>
+  <div id="detail-body"></div>
+ </div>
+</div>
+
+<!-- COMPARE -->
+<div class="overlay" id="cmp-ov">
+ <div class="modal xl">
+  <button class="modal-x" onclick="closeM('cmp-ov')">×</button>
+  <div class="modal-title">Confronto AI</div>
+  <div class="modal-sub">Analisi fianco a fianco</div>
+  <div id="cmp-body"></div>
+ </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     NAV
+══════════════════════════════════════ -->
+<nav>
+ <div class="logo" onclick="goPage('home')">
+  <div class="logo-cube">
+   <div class="logo-face f">N</div><div class="logo-face b">N</div>
+   <div class="logo-face l">X</div><div class="logo-face r">X</div>
+   <div class="logo-face t">◈</div><div class="logo-face bo">◈</div>
+  </div>
+  <div class="logo-text">Noxera</div>
+ </div>
+ <ul class="nav-links">
+  <li><a data-p="home" onclick="goPage('home')">Home</a></li>
+  <li><a data-p="wallet" onclick="goPage('wallet')">Portafoglio</a></li>
+  <li><a data-p="directory" onclick="goPage('directory')">Directory AI</a></li>
+  <li><a data-p="advisor" onclick="goPage('advisor')">Consulente</a></li>
+  <li><a data-p="insurance" onclick="goPage('insurance')">Protezione</a></li>
+ </ul>
+ <div class="nav-right">
+  <!-- guest -->
+  <div id="nav-guest" style="display:flex;gap:10px">
+   <button class="btn btn-ghost btn-sm" onclick="openM('auth-ov');authTab('login')">Accedi</button>
+   <button class="btn btn-primary btn-sm" onclick="openM('auth-ov');authTab('reg')">Inizia gratis</button>
+  </div>
+  <!-- logged in -->
+  <div class="nav-user" id="nav-user">
+   <div class="nav-avatar" id="nav-avatar" onclick="goPage('account')">?</div>
+   <span class="nav-username" id="nav-username" onclick="goPage('account')">Account</span>
+   <span class="nav-logout" onclick="doLogout()">Esci</span>
+  </div>
+ </div>
+</nav>
+
+<!-- ══════════════════════════════════════
+     HOME
+══════════════════════════════════════ -->
+<div class="page active" id="p-home">
+ <section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-hud">
+   <div class="hud-txt">SYS: ONLINE · v2.1</div>
+   <div class="hud-txt" style="text-align:right">AI: 30+ · LIVE</div>
+  </div>
+  <div class="hero-content">
+   <div class="hero-badge"><div class="badge-pulse"></div>Portafoglio AI · 2025</div>
+   <h1>La tua <span class="glow-word">banca</span>
+    <span class="sub-line">per il mondo dell'intelligenza artificiale</span>
+   </h1>
+   <p class="hero-p">Gestisci ogni abbonamento AI, <b>risparmia con sconti esclusivi</b>, scopri i migliori tool e ricevi consigli personalizzati. Un portafoglio che evolve con te.</p>
+   <div class="hero-cta">
+    <button class="btn btn-primary btn-lg" onclick="openM('auth-ov');authTab('reg')">Crea il tuo portafoglio →</button>
+    <button class="btn btn-cyan btn-lg" onclick="goPage('directory')">Esplora gli AI</button>
+   </div>
+   <div class="float-cards">
+    <div class="fcard"><div class="fcard-ico">◈</div><div class="fcard-val">30<b>+</b></div><div class="fcard-lbl">AI catalogati</div></div>
+    <div class="fcard"><div class="fcard-ico">💎</div><div class="fcard-val"><b>€</b>47</div><div class="fcard-lbl">Risparmio/mese</div></div>
+    <div class="fcard"><div class="fcard-ico">◉</div><div class="fcard-val">15k<b>+</b></div><div class="fcard-lbl">Utenti attivi</div></div>
+    <div class="fcard"><div class="fcard-ico">★</div><div class="fcard-val">98<b>%</b></div><div class="fcard-lbl">Soddisfazione</div></div>
+   </div>
+  </div>
+ </section>
+
+ <div class="ticker-strip"><div class="ticker-inner" id="ticker"></div></div>
+
+ <section class="feat-section reveal">
+  <div class="s-eye">Cosa offre Noxera</div>
+  <h2 class="s-title">Un ecosistema completo<br>per chi vive di AI.</h2>
+  <p class="s-sub">Ogni funzionalità è progettata per farti risparmiare tempo, denaro e decisioni.</p>
+  <div class="feat-grid">
+   <div class="feat-card" onclick="goPage('wallet')"><div class="feat-ico">◈</div><div class="feat-name">Portafoglio AI</div><div class="feat-desc">Tutti i tuoi abbonamenti in un pannello unico, stile Apple Wallet. Spese, rinnovi, sconti automatici.</div><div class="feat-link">Vai al portafoglio →</div></div>
+   <div class="feat-card" onclick="goPage('directory')"><div class="feat-ico">◉</div><div class="feat-name">Directory & Classifiche</div><div class="feat-desc">30+ AI catalogati con descrizioni complete, pro/contro, prezzi aggiornati e confronti fianco a fianco.</div><div class="feat-link">Esplora la directory →</div></div>
+   <div class="feat-card" onclick="goPage('advisor')"><div class="feat-ico">◎</div><div class="feat-name">Consulente AI</div><div class="feat-desc">Descrivi il tuo lavoro: ti costruisco uno stack AI su misura con prezzi reali e sconti Noxera.</div><div class="feat-link">Parla con il consulente →</div></div>
+   <div class="feat-card" onclick="goPage('insurance')"><div class="feat-ico">◇</div><div class="feat-name">Protezione</div><div class="feat-desc">Se un AI chiude o cambia prezzi sei coperto. Rimborsi, blocco prezzi garantito 12 mesi.</div><div class="feat-link">Scopri i piani →</div></div>
+   <div class="feat-card" onclick="openPay('Sconti Esclusivi Noxera','Bundle Top AI','€45/mese','€32/mese','price_1TGKwdGWNMz2sQI203EJZLpd')"><div class="feat-ico">◆</div><div class="feat-name">Sconti Esclusivi</div><div class="feat-desc">Tariffe negoziate con ChatGPT, Claude, Midjourney e altri 20+ servizi. Risparmi dal 5% al 30%.</div><div class="feat-link">Vedi le offerte →</div></div>
+   <div class="feat-card"><div class="feat-ico">⟳</div><div class="feat-name">Automazioni n8n</div><div class="feat-desc">Alert prezzi, avvisi rinnovi, report mensile automatico e classifiche AI aggiornate ogni 24 ore.</div><div class="feat-link">Già incluso →</div></div>
+  </div>
+ </section>
+
+ <section class="steps-section reveal">
+  <div class="s-eye">Come funziona</div>
+  <h2 class="s-title" style="margin-bottom:48px">Quattro passi,<br>controllo totale.</h2>
+  <div class="steps-row">
+   <div class="step-card-home"><div class="step-num">1</div><div class="step-title-h">Registrati</div><div class="step-desc-h">30 secondi, gratis, nessuna carta richiesta.</div></div>
+   <div class="step-card-home"><div class="step-num">2</div><div class="step-title-h">Aggiungi i tuoi AI</div><div class="step-desc-h">Seleziona i servizi, il prezzo appare già.</div></div>
+   <div class="step-card-home"><div class="step-num">3</div><div class="step-title-h">Attiva gli sconti</div><div class="step-desc-h">Noxera applica le tariffe negoziate per te.</div></div>
+   <div class="step-card-home"><div class="step-num">4</div><div class="step-title-h">Monitora tutto</div><div class="step-desc-h">Dashboard, alert, report mensile automatico.</div></div>
+  </div>
+ </section>
+
+ <footer>
+  <div class="footer-inner">
+   <div class="footer-grid">
+    <div><div class="f-logo">Noxera</div><p class="f-desc">Il primo portafoglio intelligente per abbonamenti AI. Risparmia, scopri e proteggi i tuoi investimenti digitali.</p></div>
+    <div class="f-col"><h5>Prodotto</h5><a onclick="goPage('wallet')">Portafoglio</a><a onclick="goPage('directory')">Directory AI</a><a onclick="goPage('advisor')">Consulente</a><a onclick="goPage('insurance')">Protezione</a></div>
+    <div class="f-col"><h5>Azienda</h5><a onclick="showToast('Pagina in arrivo.','ℹ')">Chi siamo</a><a onclick="showToast('Blog in arrivo.','ℹ')">Blog</a><a onclick="showToast('Posizioni aperte.','ℹ')">Carriere</a><a onclick="showToast('Press kit scaricato.','ok')">Press kit</a></div>
+    <div class="f-col"><h5>Legale</h5><a onclick="showToast('Privacy Policy aperta.','ℹ')">Privacy Policy</a><a onclick="showToast('Termini di servizio aperti.','ℹ')">Termini</a><a onclick="showToast('Cookie settings.','ℹ')">Cookie</a><a onclick="showToast('GDPR compliance.','ℹ')">GDPR</a></div>
+   </div>
+   <div class="footer-bottom"><p>© 2025 Noxera — Made in Italy 🇮🇹</p><p>Classifiche aggiornate ogni 24h</p></div>
+  </div>
+ </footer>
+</div>
+
+<!-- ══════════════════════════════════════
+     WALLET
+══════════════════════════════════════ -->
+<div class="page" id="p-wallet">
+ <div class="page-wrap">
+  <div class="page-eyebrow">Il tuo account</div>
+  <h1 class="page-title">Portafoglio AI</h1>
+  <p class="page-sub" style="margin-bottom:28px">I tuoi abbonamenti, spese e risparmi in un pannello unico.</p>
+
+  <div class="wallet-hero">
+   <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px">
+    <div>
+     <div class="wh-label">Spesa mensile totale</div>
+     <div class="wh-total"><small>€</small><span id="wh-total">0.00</span></div>
+     <div class="wh-saving" id="wh-saving">↓ Risparmio Noxera attivo</div>
+    </div>
+    <div class="wh-stats">
+     <div><div class="whs-val" id="wh-count">0</div><div class="whs-lbl">Abbonamenti</div></div>
+     <div><div class="whs-val c" id="wh-saved">€0</div><div class="whs-lbl">Risparmiati</div></div>
+     <div><div class="whs-val" id="wh-next">—</div><div class="whs-lbl">Prossimo rinnovo</div></div>
+    </div>
+   </div>
+  </div>
+
+  <div class="wallet-layout">
+   <div>
+    <div class="subs-label">I tuoi abbonamenti <span onclick="openM('addsub-ov')">+ Aggiungi</span></div>
+    <div class="sub-cards" id="sub-cards">
+     <div class="empty-wallet" id="wallet-empty">
+      <div class="e-ico">◈</div>
+      <p>Nessun abbonamento ancora.</p>
+      <button class="btn btn-cyan" style="margin-top:16px" onclick="openM('addsub-ov')">+ Aggiungi il primo</button>
+     </div>
+    </div>
+    <button class="btn btn-cyan btn-full" style="margin-top:14px" onclick="openM('addsub-ov')">+ Aggiungi abbonamento</button>
+   </div>
+   <div class="ws">
+    <div class="sc"><div class="sc-title">📊 Spesa ultimi 6 mesi</div><div class="bars" id="spend-bars"></div><div class="bar-lbls"><span>Mag</span><span>Giu</span><span>Lug</span><span>Ago</span><span>Set</span><span>Ott</span></div></div>
+    <div class="sc"><div class="sc-title">🔔 Prossimi rinnovi</div><div class="ren-list" id="ren-list"><div style="font-size:12px;color:var(--w4)">Nessun rinnovo in arrivo.</div></div></div>
+    <div class="tip-box">
+     <div class="tip-label">◈ Consiglio Noxera</div>
+     <p class="tip-text" id="tip-text">Aggiungi i tuoi abbonamenti AI per ricevere suggerimenti personalizzati e attivare i bundle esclusivi.</p>
+     <button class="btn btn-cyan btn-full" id="tip-btn" onclick="openPay('Bundle Testo Premium','ChatGPT + Claude bundle','€38/mese','€32/mese','price_1TGKwdGWNMz2sQI203EJZLpd')">Attiva bundle →</button>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     DIRECTORY
+══════════════════════════════════════ -->
+<div class="page" id="p-directory">
+ <div class="page-wrap">
+  <div class="page-eyebrow">Classifiche live · aggiornate ogni 24h</div>
+  <h1 class="page-title">Directory AI</h1>
+  <p class="page-sub" style="margin-bottom:24px">30+ strumenti AI con descrizioni, pro/contro, prezzi e confronti.</p>
+  <div class="dir-bar">
+   <div class="search-wrap"><input class="dir-search" placeholder="Cerca un AI..." id="dir-q" oninput="renderDir()"></div>
+   <div class="filter-pills" id="fpills"></div>
+  </div>
+  <div class="cmp-bar" id="cmp-bar">
+   <span style="font-size:12px;color:var(--w3)">Confronto:</span>
+   <div id="cmp-slots" style="display:flex;gap:7px"></div>
+   <button class="btn btn-cyan btn-sm" onclick="openCompare()">Confronta →</button>
+   <button class="btn btn-ghost btn-sm" onclick="clearCmp()">Svuota</button>
+  </div>
+  <div class="ai-count-txt" id="ai-count"></div>
+  <div class="ai-grid" id="ai-grid"></div>
+ </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     ADVISOR
+══════════════════════════════════════ -->
+<div class="page" id="p-advisor">
+ <div class="adv-wrap">
+  <div class="page-eyebrow">Intelligenza personalizzata</div>
+  <h1 class="page-title" style="margin-bottom:6px">Consulente AI</h1>
+  <p class="page-sub" style="margin-bottom:22px">Descrivi il tuo lavoro. Ti costruisco uno stack su misura.</p>
+  <div class="adv-card">
+   <div class="adv-av">🧠</div>
+   <div>
+    <div class="adv-name">Advisor Noxera</div>
+    <div class="adv-online"><span class="adv-dot"></span>Online · risponde in tempo reale</div>
+    <div class="adv-desc">Stack AI personalizzati, stima ROI e sconti Noxera inclusi per ogni profilo professionale.</div>
+   </div>
+  </div>
+  <div class="chat-box">
+   <div class="chat-msgs" id="chat-msgs">
+    <div class="cmsg ai"><div class="cmsg-av ai">🧠</div><div class="cmsg-bub">Benvenuto in Noxera. Sono il tuo consulente AI.<br><br>Dimmi <strong>che lavoro fai</strong> o <strong>cosa vorresti automatizzare</strong> — costruirò per te uno stack AI su misura con prezzi reali e sconti Noxera.</div></div>
+   </div>
+   <div class="chat-chips" id="chat-chips">
+    <button class="chip" onclick="doChip(this)">Sono un designer</button>
+    <button class="chip" onclick="doChip(this)">Creo contenuti social</button>
+    <button class="chip" onclick="doChip(this)">Lavoro nel marketing</button>
+    <button class="chip" onclick="doChip(this)">Sono uno sviluppatore</button>
+    <button class="chip" onclick="doChip(this)">Gestisco un e-commerce</button>
+    <button class="chip" onclick="doChip(this)">Scrivo testi / copy</button>
+    <button class="chip" onclick="doChip(this)">Faccio video YouTube</button>
+    <button class="chip" onclick="doChip(this)">Lavoro nella musica</button>
+   </div>
+   <div class="chat-foot">
+    <input class="chat-inp" id="chat-inp" placeholder="Descrivi il tuo lavoro..." onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="chat-send" onclick="sendChat()">→</button>
+   </div>
+  </div>
+ </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     INSURANCE
+══════════════════════════════════════ -->
+<div class="page" id="p-insurance">
+ <div class="page-wrap">
+  <div class="page-eyebrow">Protezione digitale</div>
+  <h1 class="page-title">Protezione Abbonamenti</h1>
+  <p class="page-sub" style="margin-bottom:32px">Se un AI chiude o cambia condizioni, sei coperto. Una protezione unica nel settore.</p>
+  <div class="plans-grid">
+   <div class="plan">
+    <div class="plan-ico">🛡️</div><div class="plan-name">Base</div>
+    <div class="plan-price">€2.99 <span>/ mese</span></div>
+    <div class="plan-desc">La protezione essenziale per chi inizia.</div>
+    <ul class="plan-feats"><li>Rimborso fino a €50 se un AI chiude</li><li>Alert cambio prezzi real-time</li><li>Report mensile automatico via email</li><li>Supporto chat entro 48h</li><li>Avvisi rinnovi 7 giorni prima</li></ul>
+    <button class="plan-btn" onclick="requireAuthThen(()=>openPay('Piano Base Noxera','Piano Protezione Base','€2.99/mese','€2.99/mese','price_1TGKvxGWNMz2sQI2hZipLcWs'))">Attiva ora</button>
+   </div>
+   <div class="plan feat">
+    <div class="plan-badge"><span class="badge badge-new">Consigliato</span></div>
+    <div class="plan-ico">🔐</div><div class="plan-name">Premium</div>
+    <div class="plan-price">€7.99 <span>/ mese</span></div>
+    <div class="plan-desc">Per chi usa 3+ AI ogni giorno.</div>
+    <ul class="plan-feats"><li>Rimborso fino a €200</li><li>Blocco prezzi garantito 12 mesi</li><li>Copertura cambio T&C</li><li>Consulente AI illimitato</li><li>Sconti fino al 30%</li><li>Supporto prioritario 4h</li></ul>
+    <button class="plan-btn" onclick="requireAuthThen(()=>openPay('Piano Premium Noxera','Piano Protezione Premium','€7.99/mese','€7.99/mese','price_1TGKwdGWNMz2sQI203EJZLpd'))">Attiva ora</button>
+   </div>
+   <div class="plan">
+    <div class="plan-ico">🏢</div><div class="plan-name">Business</div>
+    <div class="plan-price">€24.99 <span>/ mese</span></div>
+    <div class="plan-desc">Per team e aziende.</div>
+    <ul class="plan-feats"><li>Rimborso illimitato team</li><li>Multi-account centralizzato</li><li>Dashboard analytics avanzata</li><li>Integrazioni API custom</li><li>Account manager dedicato</li><li>SLA supporto 1h</li></ul>
+    <button class="plan-btn" onclick="requireAuthThen(()=>openPay('Piano Business Noxera','Piano Protezione Business','€24.99/mese','€24.99/mese','price_1TGKx1GWNMz2sQI2LyQ7NssA'))">Attiva ora</button>
+   </div>
+  </div>
+  <h3 style="font-family:var(--serif);font-size:22px;color:var(--white);margin-bottom:18px">Confronto piani</h3>
+  <table class="ctable">
+   <thead><tr><th>Funzionalità</th><th>Base</th><th>Premium</th><th>Business</th></tr></thead>
+   <tbody>
+    <tr><td>Rimborso max</td><td class="val">€50</td><td class="val">€200</td><td class="val">Illimitato</td></tr>
+    <tr><td>Alert prezzi real-time</td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td></tr>
+    <tr><td>Blocco prezzi 12 mesi</td><td><span class="x">—</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td></tr>
+    <tr><td>Sconto abbonamenti</td><td class="val">5%</td><td class="val">30%</td><td class="val">40%</td></tr>
+    <tr><td>Consulente AI illimitato</td><td><span class="x">—</span></td><td><span class="chk">✓</span></td><td><span class="chk">✓</span></td></tr>
+    <tr><td>Multi-account team</td><td><span class="x">—</span></td><td><span class="x">—</span></td><td><span class="chk">✓</span></td></tr>
+    <tr><td>Supporto risposta</td><td class="val">48h</td><td class="val">4h</td><td class="val">1h SLA</td></tr>
+   </tbody>
+  </table>
+ </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     ACCOUNT
+══════════════════════════════════════ -->
+<div class="page" id="p-account">
+ <div class="page-wrap">
+  <div class="page-eyebrow">Il tuo profilo</div>
+  <h1 class="page-title">Account</h1>
+  <div class="acc-layout" style="margin-top:24px">
+   <div class="acc-side">
+    <div class="acc-profile">
+     <div class="acc-av" id="acc-av">?</div>
+     <div class="acc-name" id="acc-name">—</div>
+     <div class="acc-email" id="acc-email-disp">—</div>
+     <div class="acc-plan-tag" id="acc-plan-tag">◈ Piano Free</div>
+    </div>
+    <div class="acc-menu">
+     <div class="acc-mi on"><span class="ico">◈</span>Profilo</div>
+     <div class="acc-mi" onclick="goPage('wallet')"><span class="ico">◉</span>Abbonamenti</div>
+     <div class="acc-mi" onclick="goPage('insurance')"><span class="ico">🛡️</span>Piano protezione</div>
+     <div class="acc-mi" onclick="showToast('Fatture scaricate nella cartella Download.','ok')"><span class="ico">🧾</span>Fatture</div>
+     <div class="acc-mi" onclick="showToast('Email di supporto: support@noxera.com','ℹ')"><span class="ico">💬</span>Supporto</div>
+     <div class="acc-mi" style="color:var(--red)" onclick="doLogout()"><span class="ico">↗</span>Esci</div>
+    </div>
+   </div>
+   <div class="acc-main">
+    <div class="acc-sec">
+     <div class="acc-sec-title">Informazioni personali</div>
+     <div class="frow">
+      <div class="fg" style="margin-bottom:0"><div class="fl">Nome</div><input class="fi" id="acc-nome" placeholder="Marco"></div>
+      <div class="fg" style="margin-bottom:0"><div class="fl">Cognome</div><input class="fi" id="acc-cog" placeholder="Rossi"></div>
+     </div>
+     <div class="fg" style="margin-top:14px"><div class="fl">Email</div><input class="fi" id="acc-email-field" type="email" placeholder="tua@email.com" readonly style="opacity:.7"></div>
+     <div class="fg"><div class="fl">Settore professionale</div>
+      <select class="fi" id="acc-settore"><option value="design">Design</option><option value="marketing">Marketing</option><option value="sviluppo">Sviluppo</option><option value="ecommerce">E-commerce</option><option value="copywriting">Copywriting</option><option value="altro">Altro</option></select>
+     </div>
+     <button class="btn btn-primary" id="btn-save-profile" onclick="saveProfile()">Salva modifiche</button>
+    </div>
+    <div class="acc-sec">
+     <div class="acc-sec-title">Notifiche</div>
+     <div class="tgl-row"><div><div class="tgl-lbl">Alert rinnovi</div><div class="tgl-sub">7 giorni prima di ogni scadenza</div></div><div class="tgl on" onclick="doTgl(this,'Alert rinnovi')"></div></div>
+     <div class="tgl-row"><div><div class="tgl-lbl">Alert cambio prezzi</div><div class="tgl-sub">Notifica immediata</div></div><div class="tgl on" onclick="doTgl(this,'Alert prezzi')"></div></div>
+     <div class="tgl-row"><div><div class="tgl-lbl">Report mensile</div><div class="tgl-sub">Ogni primo del mese</div></div><div class="tgl on" onclick="doTgl(this,'Report mensile')"></div></div>
+     <div class="tgl-row"><div><div class="tgl-lbl">Nuovi AI nel tuo settore</div><div class="tgl-sub">Segnalazione settimanale</div></div><div class="tgl" onclick="doTgl(this,'Nuovi AI')"></div></div>
+     <div class="tgl-row"><div><div class="tgl-lbl">Offerte esclusive</div><div class="tgl-sub">Bundle e promozioni Noxera</div></div><div class="tgl on" onclick="doTgl(this,'Offerte')"></div></div>
+    </div>
+    <div class="acc-sec">
+     <div class="acc-sec-title">Sicurezza</div>
+     <div class="fg"><div class="fl">Nuova password</div><input class="fi" type="password" id="pw-new" placeholder="••••••••"></div>
+     <div class="fg"><div class="fl">Conferma password</div><input class="fi" type="password" id="pw-cf" placeholder="••••••••"></div>
+     <div id="pw-err" class="field-error"></div>
+     <button class="btn btn-ghost" onclick="changePassword()">Aggiorna password</button>
+    </div>
+    <div class="acc-sec">
+     <div class="acc-sec-title">Piano attuale</div>
+     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <div><div style="font-family:var(--serif);font-size:18px;color:var(--white)" id="acc-plan-name">Piano Free</div><div style="font-size:13px;color:var(--w3);margin-top:3px" id="acc-plan-detail">Aggiorna per sbloccare tutte le funzionalità</div></div>
+      <span class="badge badge-new" id="acc-plan-badge">Attivo</span>
+     </div>
+     <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-cyan btn-sm" onclick="goPage('insurance')">Cambia piano</button>
+      <button class="btn btn-danger btn-sm" onclick="cancelPlan()">Disdici abbonamento</button>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT — FIREBASE + STRIPE + TUTTO
+══════════════════════════════════════ -->
+<script>
+// ═══════════════════════════════
+// CONFIG — credenziali reali
+// ═══════════════════════════════
+// ISTRUZIONI: per trovare appId e messagingSenderId reali:
+// 1. Vai su console.firebase.google.com
+// 2. Progetto noxera-491715 → ⚙ Impostazioni → Le tue app
+// 3. Sezione "Web app" → copia l'intero firebaseConfig
+// 4. Sostituisci i valori PLACEHOLDER qui sotto con i tuoi reali
+const CFG = {
+  firebase: {
+    apiKey:            "AIzaSyD2Qh4mwqXG0jqZOw-OsZQ4UyPuZqmifKw",
+    authDomain:        "noxera-491715.firebaseapp.com",
+    projectId:         "noxera-491715",
+    storageBucket:     "noxera-491715.appspot.com",
+    messagingSenderId: "816141616442",
+    appId:             "1:816141616442:web:2e7ad29ecef3504914fc03",
+    measurementId:     "G-HJ01Y2962H"
+  },
+  stripe: {
+    publishableKey: "pk_test_51TABYSGWNMz2sQI2pwVvS9dLCTmp2EMiww72Ov3KOQNdPSRfNQTzkUbEu7VlWKT8N3xgN3W9YKMYw4nkDxsLG8Z900dUkXT3Ia",
+    prices: {
+      base:     "price_1TGKvxGWNMz2sQI2hZipLcWs",
+      premium:  "price_1TGKwdGWNMz2sQI203EJZLpd",
+      business: "price_1TGKx1GWNMz2sQI2LyQ7NssA"
+    }
+  },
+  siteUrl: "https://noxera-kappa.vercel.app"
+};
+
+// ═══════════════════════════════
+// INIT FIREBASE + STRIPE
+// ═══════════════════════════════
+let db = null, auth = null, stripe = null, cardElement = null, currentUser = null;
+let userSubs = [], currentPayPriceId = null;
+let FIREBASE_OK = false, STRIPE_OK = false;
+
+function isFirebaseConfigComplete() {
+  const c = CFG.firebase;
+  return c.apiKey && c.authDomain && c.projectId && c.appId &&
+    !c.appId.includes('INSERISCI') && !c.messagingSenderId.includes('INSERISCI');
+}
+
+function initStripe() {
+  try {
+    stripe = Stripe(CFG.stripe.publishableKey);
+    const elements = stripe.elements();
+    cardElement = elements.create('card', {
+      style: {
+        base: { color:'#f0f6ff', fontFamily:'General Sans, sans-serif', fontSize:'14px', '::placeholder':{ color:'#2e4060' } },
+        invalid: { color:'#e17055' }
+      }
+    });
+    cardElement.on('focus', ()=>{
+      const el = document.getElementById('stripe-card-element');
+      if(el) el.classList.add('focused');
+    });
+    cardElement.on('blur', ()=>{
+      const el = document.getElementById('stripe-card-element');
+      if(el) el.classList.remove('focused');
+    });
+    STRIPE_OK = true;
+  } catch(e) {
+    console.warn('Stripe init error:', e);
+  }
+}
+
+function initServices() {
+  // Init Stripe (always works with valid publishable key)
+  initStripe();
+
+  // Init Firebase only if config is complete
+  if(!isFirebaseConfigComplete()) {
+    console.warn('Firebase config incompleto. Modalità offline attivata.');
+    loadingProgress(100, 'Modalità demo');
+    setTimeout(hideLoading, 500);
+    // Show banner
+    showConfigBanner();
+    return;
+  }
+
+  try {
+    // Avoid double init if already initialized
+    if(!firebase.apps.length) {
+      firebase.initializeApp(CFG.firebase);
+    }
+    auth = firebase.auth();
+    db   = firebase.firestore();
+    // Enable Firestore offline persistence
+    db.enablePersistence({ synchronizeTabs: true }).catch(()=>{});
+
+    auth.onAuthStateChanged(handleAuthChange);
+    FIREBASE_OK = true;
+    loadingProgress(100, 'Pronto!');
+    setTimeout(hideLoading, 500);
+  } catch(e) {
+    console.error('Firebase init failed:', e.code, e.message);
+    loadingProgress(100, 'Errore inizializzazione');
+    setTimeout(hideLoading, 500);
+    showToast('Errore Firebase: ' + (e.message||e.code) + '. Controlla la console.', 'err');
+  }
+}
+
+function showConfigBanner() {
+  // Credenziali complete — nessun banner necessario
+}
+
+// ═══════════════════════════════
+// LOADING
+// ═══════════════════════════════
+let lp = 0;
+function loadingProgress(target, txt) {
+  const bar = document.getElementById('load-bar');
+  const t = document.getElementById('load-txt');
+  if(bar) bar.style.width = target + '%';
+  if(t && txt) t.textContent = txt;
+}
+function hideLoading() {
+  const l = document.getElementById('loading');
+  if(l) { l.classList.add('hidden'); setTimeout(()=>l.style.display='none', 600); }
+}
+// fake progress
+const steps = [
+  [20,'Firebase...'], [50,'Stripe...'], [75,'Three.js...'], [90,'Directory AI...']
+];
+steps.forEach(([p,t],i) => setTimeout(()=>loadingProgress(p,t), i*200));
+window.addEventListener('load', ()=>setTimeout(initServices, 800));
+
+// ═══════════════════════════════
+// CURSOR
+// ═══════════════════════════════
+const cur = document.getElementById('cur'), ring = document.getElementById('ring');
+let mx=0,my=0,rx=window.innerWidth/2,ry=window.innerHeight/2;
+document.addEventListener('mousemove',e=>{ mx=e.clientX; my=e.clientY; cur.style.left=mx+'px'; cur.style.top=my+'px'; });
+(function animRing(){
+  rx+=(mx-rx)*.12; ry+=(my-ry)*.12;
+  ring.style.left=rx+'px'; ring.style.top=ry+'px';
+  requestAnimationFrame(animRing);
+})();
+document.querySelectorAll('button,a,.feat-card,.ai-card,.swc').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cur.style.transform='translate(-50%,-50%) scale(2)';ring.style.transform='translate(-50%,-50%) scale(1.5)';});
+  el.addEventListener('mouseleave',()=>{cur.style.transform='translate(-50%,-50%) scale(1)';ring.style.transform='translate(-50%,-50%) scale(1)';});
+});
+
+// ═══════════════════════════════
+// THREE.JS HERO
+// ═══════════════════════════════
+(function initThree(){
+  const canvas = document.getElementById('hero-canvas');
+  if(!canvas || typeof THREE === 'undefined') return;
+  const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+  camera.position.z = 5;
+  function resize(){
+    const w = canvas.parentElement.clientWidth, h = canvas.parentElement.clientHeight;
+    renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix();
+  }
+  resize(); window.addEventListener('resize', resize);
+  const spheres = [];
+  const sg = new THREE.SphereGeometry(.07, 12, 12);
+  for(let i=0;i<50;i++){
+    const m = new THREE.MeshBasicMaterial({color:i%3===0?0x4f8ef7:i%3===1?0x00d4ff:0x6c5ce7, transparent:true, opacity:.5+Math.random()*.5});
+    const mesh = new THREE.Mesh(sg, m);
+    mesh.position.set((Math.random()-.5)*14,(Math.random()-.5)*10,(Math.random()-.5)*6);
+    mesh.userData = {vx:(Math.random()-.5)*.005,vy:(Math.random()-.5)*.005,vz:(Math.random()-.5)*.003};
+    scene.add(mesh); spheres.push(mesh);
+  }
+  const torus = new THREE.Mesh(new THREE.TorusGeometry(2.2,.5,8,48), new THREE.MeshBasicMaterial({color:0x4f8ef7,wireframe:true,transparent:true,opacity:.1}));
+  const torus2 = new THREE.Mesh(new THREE.TorusGeometry(1.3,.2,8,32), new THREE.MeshBasicMaterial({color:0x00d4ff,wireframe:true,transparent:true,opacity:.15}));
+  scene.add(torus); scene.add(torus2);
+  let mouseX=0, mouseY=0;
+  document.addEventListener('mousemove',e=>{ mouseX=(e.clientX/window.innerWidth-.5)*2; mouseY=-(e.clientY/window.innerHeight-.5)*2; });
+  (function animate(){
+    requestAnimationFrame(animate);
+    torus.rotation.x+=.003; torus.rotation.y+=.005;
+    torus2.rotation.x-=.004; torus2.rotation.z+=.006;
+    spheres.forEach(s=>{
+      s.position.x+=s.userData.vx; s.position.y+=s.userData.vy; s.position.z+=s.userData.vz;
+      if(Math.abs(s.position.x)>7)s.userData.vx*=-1;
+      if(Math.abs(s.position.y)>5)s.userData.vy*=-1;
+      if(Math.abs(s.position.z)>3)s.userData.vz*=-1;
+    });
+    camera.position.x+=(mouseX*.3-camera.position.x)*.03;
+    camera.position.y+=(mouseY*.2-camera.position.y)*.03;
+    camera.lookAt(0,0,0); renderer.render(scene,camera);
+  })();
+})();
+
+// ═══════════════════════════════
+// TOAST
+// ═══════════════════════════════
+function showToast(msg, type='ℹ') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-ico').textContent = type==='ok'?'✓':type==='err'?'✗':'◈';
+  document.getElementById('toast-txt').textContent = msg;
+  t.className = 'toast show' + (type==='err'?' err':type==='ok'?' ok':'');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), 3800);
+}
+
+// ═══════════════════════════════
+// MODALS
+// ═══════════════════════════════
+function openM(id) {
+  document.getElementById(id).classList.add('open');
+  if(id==='pay-ov') {
+    setTimeout(()=>{
+      const el = document.getElementById('stripe-card-element');
+      if(cardElement && el && !el.hasChildNodes()) {
+        try { cardElement.mount('#stripe-card-element'); } catch(e) { console.warn('Stripe mount:', e); }
+      } else if(!cardElement) {
+        if(el) el.innerHTML = '<div style="padding:12px;font-size:12px;color:#6e8bb0">Stripe non inizializzato. Ricarica la pagina.</div>';
+      }
+    }, 150);
+  }
+}
+function closeM(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
+
+// ═══════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════
+function goPage(id) {
+  if((id==='wallet'||id==='account') && !currentUser) {
+    showToast('Accedi prima per vedere questa sezione.','ℹ');
+    openM('auth-ov'); authTab('login'); return;
+  }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('p-'+id).classList.add('active');
+  window.scrollTo(0,0);
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.toggle('active', a.dataset.p===id));
+  if(id==='directory') renderDir();
+  if(id==='wallet') renderWallet();
+  observeReveal();
+}
+
+// ═══════════════════════════════
+// AUTH STATE
+// ═══════════════════════════════
+function handleAuthChange(user) {
+  currentUser = user;
+  const navGuest = document.getElementById('nav-guest');
+  const navUser  = document.getElementById('nav-user');
+  if(!navGuest || !navUser) return;
+  if(user) {
+    navGuest.style.display = 'none';
+    navUser.classList.add('visible');
+    const displayName = user.displayName || user.email.split('@')[0];
+    const initials = displayName.charAt(0).toUpperCase();
+    document.getElementById('nav-avatar').textContent = initials;
+    document.getElementById('nav-username').textContent = displayName;
+    // populate account page
+    const accAv = document.getElementById('acc-av');
+    const accName = document.getElementById('acc-name');
+    const accEmail = document.getElementById('acc-email-disp');
+    const accEmailF = document.getElementById('acc-email-field');
+    const accNome = document.getElementById('acc-nome');
+    const accCog  = document.getElementById('acc-cog');
+    if(accAv) accAv.textContent = initials;
+    if(accName) accName.textContent = displayName;
+    if(accEmail) accEmail.textContent = user.email;
+    if(accEmailF) accEmailF.value = user.email;
+    const names = displayName.split(' ');
+    if(accNome) accNome.value = names[0] || '';
+    if(accCog)  accCog.value  = names[1] || '';
+    // update user's lastLogin in Firestore
+    if(db) {
+      db.collection('users').doc(user.uid).set(
+        { lastLogin: firebase.firestore.FieldValue.serverTimestamp() },
+        { merge: true }
+      ).catch(()=>{});
+    }
+    // load subs
+    loadUserSubs();
+  } else {
+    navGuest.style.display = 'flex';
+    navUser.classList.remove('visible');
+    currentUser = null;
+    userSubs = [];
+    renderWallet();
+  }
+}
+
+// ═══════════════════════════════
+// AUTH FUNCTIONS
+// ═══════════════════════════════
+function authTab(tab) {
+  document.getElementById('tab-login').classList.toggle('on', tab==='login');
+  document.getElementById('tab-reg').classList.toggle('on', tab==='reg');
+  document.getElementById('pane-login').style.display = tab==='login'?'block':'none';
+  document.getElementById('pane-reg').style.display   = tab==='reg'?'block':'none';
+}
+
+function setAuthLoading(btnId, loading, originalText) {
+  const btn = document.getElementById(btnId);
+  if(!btn) return;
+  btn.disabled = loading;
+  btn.innerHTML = loading
+    ? `<div class="btn-spinner"></div> Attendere...`
+    : originalText;
+}
+
+function googleAuth() {
+  if(!FIREBASE_OK || !auth) {
+    showToast('Firebase non pronto. Controlla il banner in basso per le istruzioni.', 'err');
+    return;
+  }
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  // Add required scopes
+  provider.addScope('email');
+  provider.addScope('profile');
+  auth.signInWithPopup(provider)
+    .then(result => {
+      const user = result.user;
+      const isNew = result.additionalUserInfo.isNewUser;
+      closeM('auth-ov');
+      if(isNew) {
+        saveUserToFirestore(user, 'google');
+        showToast('✓ Benvenuto in Noxera, ' + user.displayName + '!', 'ok');
+      } else {
+        showToast('✓ Bentornato, ' + user.displayName + '!', 'ok');
+      }
+      goPage('wallet');
+    })
+    .catch(err => {
+      console.error('Google Auth:', err.code, err.message);
+      const msgs = {
+        'auth/popup-closed-by-user':    'Popup chiuso. Riprova.',
+        'auth/cancelled-popup-request': 'Richiesta annullata.',
+        'auth/popup-blocked':           'Popup bloccato. Abilita i popup per questo sito.',
+        'auth/unauthorized-domain':     'Dominio non autorizzato in Firebase. Aggiungi "' + window.location.hostname + '" in Firebase Console → Authentication → Settings → Authorized domains.',
+        'auth/configuration-not-found': 'Autenticazione non abilitata. Vai su Firebase Console → Authentication → Sign-in method → abilita Google.',
+      };
+      showToast(msgs[err.code] || ('Errore: ' + err.message), 'err');
+    });
+}
+
+function emailLogin() {
+  if(!FIREBASE_OK || !auth) {
+    showToast('Firebase non pronto. Controlla il banner in basso.', 'err');
+    return;
+  }
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  const errEl = document.getElementById('login-err');
+  errEl.textContent = '';
+  if(!email || !pass) { errEl.textContent = 'Inserisci email e password.'; return; }
+  setAuthLoading('btn-email-login', true, 'Accedi →');
+  auth.signInWithEmailAndPassword(email, pass)
+    .then(() => {
+      closeM('auth-ov');
+      showToast('✓ Accesso effettuato. Bentornato!', 'ok');
+      goPage('wallet');
+    })
+    .catch(err => {
+      console.error('Login error:', err.code);
+      const msgs = {
+        'auth/user-not-found':   'Nessun account con questa email.',
+        'auth/wrong-password':   'Password errata.',
+        'auth/invalid-email':    'Email non valida.',
+        'auth/invalid-credential': 'Email o password errata.',
+        'auth/too-many-requests':'Troppi tentativi. Riprova tra qualche minuto.',
+        'auth/user-disabled':    'Account disabilitato. Contatta il supporto.',
+        'auth/configuration-not-found': 'Email/Password non abilitata. Vai su Firebase Console → Authentication → Sign-in method.',
+      };
+      errEl.textContent = msgs[err.code] || err.message;
+    })
+    .finally(() => setAuthLoading('btn-email-login', false, 'Accedi →'));
+}
+
+function emailRegister() {
+  if(!FIREBASE_OK || !auth) {
+    showToast('Firebase non pronto. Controlla il banner in basso.', 'err');
+    return;
+  }
+  const nome  = document.getElementById('r-nome').value.trim();
+  const cog   = document.getElementById('r-cog').value.trim();
+  const email = document.getElementById('r-email').value.trim();
+  const pass  = document.getElementById('r-pass').value;
+  const settore = document.getElementById('r-settore').value;
+  const errEl = document.getElementById('reg-err');
+  errEl.textContent = '';
+  if(!nome||!email||!pass) { errEl.textContent = 'Compila tutti i campi obbligatori.'; return; }
+  if(pass.length < 8) { errEl.textContent = 'La password deve essere di almeno 8 caratteri.'; return; }
+  setAuthLoading('btn-email-reg', true, 'Crea account gratuito →');
+  auth.createUserWithEmailAndPassword(email, pass)
+    .then(result => {
+      const user = result.user;
+      return user.updateProfile({ displayName: nome + (cog?' '+cog:'') })
+        .then(()=>saveUserToFirestore(user, 'email', settore));
+    })
+    .then(() => {
+      closeM('auth-ov');
+      showToast('✓ Account creato! Benvenuto in Noxera, ' + nome + '!', 'ok');
+      if(auth.currentUser) auth.currentUser.sendEmailVerification().catch(()=>{});
+      goPage('wallet');
+    })
+    .catch(err => {
+      console.error('Register error:', err.code);
+      const msgs = {
+        'auth/email-already-in-use': 'Questa email è già registrata. Accedi invece.',
+        'auth/invalid-email':        'Email non valida.',
+        'auth/weak-password':        'Password troppo debole (minimo 8 caratteri).',
+        'auth/configuration-not-found': 'Email/Password non abilitata. Vai su Firebase Console → Authentication → Sign-in method → abilita Email/Password.',
+      };
+      errEl.textContent = msgs[err.code] || err.message;
+    })
+    .finally(() => setAuthLoading('btn-email-reg', false, 'Crea account gratuito →'));
+}
+
+function saveUserToFirestore(user, method, settore='') {
+  if(!db || !FIREBASE_OK) return Promise.resolve();
+  return db.collection('users').doc(user.uid).set({
+    uid:        user.uid,
+    name:       user.displayName || '',
+    email:      user.email,
+    settore:    settore,
+    authMethod: method,
+    plan:       'free',
+    createdAt:  firebase.firestore.FieldValue.serverTimestamp(),
+    lastLogin:  firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true }).catch(e => console.warn('saveUser:', e));
+}
+
+function doLogout() {
+  if(!auth) { showToast('Non sei loggato.','ℹ'); return; }
+  auth.signOut().then(()=>{
+    showToast('✓ Logout effettuato. A presto!', 'ok');
+    goPage('home');
+  }).catch(e => showToast('Errore logout: '+e.message,'err'));
+}
+
+function sendReset() {
+  if(!FIREBASE_OK || !auth) { showToast('Firebase non pronto.','err'); return; }
+  const email = document.getElementById('l-email').value.trim();
+  if(!email) { document.getElementById('login-err').textContent = 'Inserisci prima la tua email.'; return; }
+  auth.sendPasswordResetEmail(email)
+    .then(()=> showToast('✓ Email di recupero inviata! Controlla la casella.', 'ok'))
+    .catch(err=> {
+      const msgs = { 'auth/user-not-found':'Nessun account con questa email.', 'auth/invalid-email':'Email non valida.' };
+      document.getElementById('login-err').textContent = msgs[err.code] || err.message;
+    });
+}
+
+function requireAuthThen(fn) {
+  if(!currentUser) {
+    showToast('Accedi per continuare.', 'ℹ');
+    openM('auth-ov'); authTab('login');
+    window._pendingAction = fn;
+  } else { fn(); }
+}
+
+// ═══════════════════════════════
+// FIRESTORE — USER SUBS
+// ═══════════════════════════════
+async function loadUserSubs() {
+  if(!db || !currentUser || !FIREBASE_OK) return;
+  try {
+    const snap = await db.collection('users').doc(currentUser.uid).collection('subscriptions').get();
+    userSubs = snap.docs.map(d=>({firestoreId:d.id,...d.data()}));
+    renderWallet();
+  } catch(e) {
+    console.warn('loadUserSubs error:', e.code, e.message);
+    if(e.code === 'permission-denied') {
+      showToast('Accesso Firestore negato. Vai su Firebase Console → Firestore → Regole e imposta: allow read, write: if request.auth != null;', 'err');
+    }
+  }
+}
+
+async function saveSubToFirestore(sub) {
+  if(!db || !currentUser || !FIREBASE_OK) return null;
+  try {
+    const ref = await db.collection('users').doc(currentUser.uid).collection('subscriptions').add({
+      ...sub, addedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    return ref.id;
+  } catch(e) {
+    console.warn('saveSubToFirestore:', e.code, e.message);
+    return null;
+  }
+}
+
+async function removeSubFromFirestore(firestoreId) {
+  if(!db || !currentUser || !firestoreId || !FIREBASE_OK) return;
+  try {
+    await db.collection('users').doc(currentUser.uid).collection('subscriptions').doc(firestoreId).delete();
+  } catch(e) { console.warn('removeSubFromFirestore:', e); }
+}
+
+// ═══════════════════════════════
+// WALLET RENDER
+// ═══════════════════════════════
+const CARD_COLORS = [
+  'linear-gradient(135deg,#0f2027,#203a43,#2c5364)',
+  'linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)',
+  'linear-gradient(135deg,#141e30,#243b55)',
+  'linear-gradient(135deg,#0d0d0d,#3a3a3a)',
+  'linear-gradient(135deg,#0f0c29,#302b63)',
+  'linear-gradient(135deg,#093028,#237a57)',
+];
+
+function renderWallet() {
+  const total = userSubs.reduce((a,s)=>a+(parseFloat(s.price)||0),0);
+  const saved = total * 0.12;
+  document.getElementById('wh-total').textContent = total.toFixed(2);
+  document.getElementById('wh-count').textContent = userSubs.length;
+  document.getElementById('wh-saved').textContent = '€'+saved.toFixed(2);
+  document.getElementById('wh-next').textContent = userSubs.length>0 ? (userSubs[0].renew||'—') : '—';
+
+  const empty = document.getElementById('wallet-empty');
+  if(userSubs.length === 0) {
+    empty.style.display = 'block';
+    document.getElementById('sub-cards').innerHTML = '';
+    document.getElementById('sub-cards').appendChild(empty);
+    document.getElementById('ren-list').innerHTML = '<div style="font-size:12px;color:var(--w4)">Nessun rinnovo in arrivo.</div>';
+  } else {
+    empty.style.display = 'none';
+    document.getElementById('sub-cards').innerHTML = userSubs.map((s,i)=>`
+      <div class="swc" style="background:${CARD_COLORS[i%CARD_COLORS.length]};box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.04)">
+        <div class="swc-top">
+          <div class="swc-brand"><div class="swc-ico">${s.ico||'◈'}</div><div><div class="swc-name">${s.name}</div><div class="swc-plan">${s.plan||''}</div></div></div>
+          <div class="swc-price"><div class="swc-amount">€${parseFloat(s.price).toFixed(2)}</div><div class="swc-cycle">/mese</div></div>
+        </div>
+        <div class="swc-bottom">
+          <div class="swc-renew">Rinnovo ${s.renew||'—'}</div>
+          <div class="swc-disc">${s.disc||'Noxera'}</div>
+        </div>
+        <div class="swc-btns">
+          <button class="swc-btn" onclick="showToast('Abbonamento ${s.name}: dettagli caricati.','ℹ')">Dettagli</button>
+          <button class="swc-btn" onclick="pauseSub('${s.firestoreId||s.id}','${s.name}')">Pausa</button>
+          <button class="swc-btn del" onclick="rmSub('${s.firestoreId||s.id}','${s.name}')">Rimuovi</button>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('ren-list').innerHTML = userSubs.slice(0,4).map(s=>`
+      <div class="ren-item"><div class="ren-left"><div class="ren-dot"></div><div><div class="ren-name">${s.name}</div><div class="ren-date">${s.renew||'—'}</div></div></div><div class="ren-amt">€${parseFloat(s.price).toFixed(2)}</div></div>`).join('');
+  }
+
+  // chart bars
+  const bars=[42,55,48,70,65,82];
+  document.getElementById('spend-bars').innerHTML = bars.map((h,i)=>
+    `<div class="bar${i===5?' on':''}" style="height:${h}%" onclick="showToast('Spesa ${['Mag','Giu','Lug','Ago','Set','Ott'][i]}: €${Math.round(total*h/100)}','ℹ')"></div>`
+  ).join('');
+
+  // smart tip
+  const hasChatGPT = userSubs.some(s=>s.name.toLowerCase().includes('chatgpt'));
+  const hasClaude  = userSubs.some(s=>s.name.toLowerCase().includes('claude'));
+  if(hasChatGPT && hasClaude) {
+    document.getElementById('tip-text').textContent = 'Hai ChatGPT Plus + Claude Pro. Il Bundle Testo Premium li include a €32/mese invece di €38. Risparmio: €6/mese.';
+    document.getElementById('tip-btn').style.display='flex';
+  } else if(userSubs.length===0) {
+    document.getElementById('tip-text').textContent = 'Aggiungi i tuoi abbonamenti AI per ricevere suggerimenti personalizzati e attivare i bundle esclusivi.';
+    document.getElementById('tip-btn').style.display='none';
+  } else {
+    document.getElementById('tip-text').textContent = `Hai ${userSubs.length} abbonament${userSubs.length===1?'o':'i'} attiv${userSubs.length===1?'o':'i'}. Risparmi circa €${(total*0.12).toFixed(2)}/mese con Noxera.`;
+    document.getElementById('tip-btn').style.display='none';
+  }
+}
+
+function pauseSub(id, name) {
+  showToast(`⏸ ${name} messo in pausa. Riprenderà automaticamente al prossimo ciclo.`, 'ℹ');
+}
+
+function rmSub(id, name) {
+  if(!confirm(`Rimuovere "${name}" dal portafoglio?`)) return;
+  userSubs = userSubs.filter(s=>(s.firestoreId||s.id)!==id);
+  removeSubFromFirestore(id);
+  renderWallet();
+  showToast(`✓ ${name} rimosso dal portafoglio.`, 'ok');
+}
+
+// ═══════════════════════════════
+// ADD SUB
+// ═══════════════════════════════
+function updateSubPrice() {
+  const v = document.getElementById('sub-sel').value;
+  const info = document.getElementById('sub-disc-info');
+  if(!v) { info.style.display='none'; return; }
+  const p = v.split('|');
+  document.getElementById('sub-price').value = parseFloat(p[0])>0 ? parseFloat(p[0]).toFixed(2) : '';
+  const d = new Date(); d.setMonth(d.getMonth()+1);
+  document.getElementById('sub-date').value = d.toISOString().split('T')[0];
+  if(p[4]!=='0%') {
+    info.style.display='block';
+    info.textContent=`◈ Con Noxera: ${p[4]} di sconto → prezzo effettivo ${p[5]}`;
+  } else { info.style.display='none'; }
+}
+
+async function confirmAddSub() {
+  const v = document.getElementById('sub-sel').value;
+  if(!v) { showToast('Seleziona un servizio AI.','err'); return; }
+  const p = v.split('|');
+  const price = parseFloat(document.getElementById('sub-price').value)||parseFloat(p[0]);
+  const renewDate = document.getElementById('sub-date').value;
+  const sub = {
+    name: p[1], ico: p[3], plan: p[2]+' · '+p[1],
+    price, disc: p[4]!=='0%'?'−'+p[4]:'—',
+    renew: renewDate ? new Date(renewDate).toLocaleDateString('it-IT',{day:'numeric',month:'short'}) : '—',
+    addedAt: new Date().toISOString()
+  };
+  setAuthLoading('btn-add-sub', true, 'Aggiungi al portafoglio →');
+  try {
+    if(currentUser) {
+      const fid = await saveSubToFirestore(sub);
+      sub.firestoreId = fid;
+    }
+    userSubs.push({...sub, id: Date.now()});
+    closeM('addsub-ov');
+    renderWallet();
+    showToast(`✓ ${p[1]} aggiunto! Prezzo Noxera: ${p[5]}`, 'ok');
+    // reset form
+    document.getElementById('sub-sel').value='';
+    document.getElementById('sub-price').value='';
+    document.getElementById('sub-disc-info').style.display='none';
+  } catch(e) {
+    showToast('Errore nel salvataggio. Riprova.','err');
+  } finally {
+    setAuthLoading('btn-add-sub', false, 'Aggiungi al portafoglio →');
+  }
+}
+
+// ═══════════════════════════════
+// PAYMENT — STRIPE REAL
+// ═══════════════════════════════
+let currentPriceId = null;
+
+function openPay(desc, plan, base, total, priceId) {
+  if(!currentUser) {
+    showToast('Accedi prima per procedere al pagamento.','ℹ');
+    openM('auth-ov'); authTab('login'); return;
+  }
+  document.getElementById('pay-desc').textContent = desc;
+  document.getElementById('psum-plan').textContent = plan;
+  document.getElementById('psum-base').textContent = base;
+  document.getElementById('psum-total').textContent = total;
+  document.getElementById('payment-error').textContent = '';
+  currentPriceId = priceId;
+  openM('pay-ov');
+}
+
+function payTab(tab, el) {
+  document.querySelectorAll('.pay-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('ps-stripe').classList.toggle('on',tab==='stripe');
+  document.getElementById('ps-paypal').classList.toggle('on',tab==='paypal');
+}
+
+async function submitStripePayment() {
+  if(!stripe || !cardElement) { showToast('Stripe non ancora caricato. Riprova.','err'); return; }
+  const errEl = document.getElementById('payment-error');
+  errEl.textContent = '';
+  setAuthLoading('btn-pay-stripe', true, 'Paga ora →');
+
+  try {
+    // Create PaymentMethod
+    const {paymentMethod, error} = await stripe.createPaymentMethod({
+      type: 'card',
+      card: cardElement,
+      billing_details: {
+        email: currentUser?.email || '',
+        name: currentUser?.displayName || ''
+      }
+    });
+
+    if(error) {
+      errEl.textContent = error.message;
+      setAuthLoading('btn-pay-stripe', false, 'Paga ora →');
+      return;
+    }
+
+    // In produzione qui chiami il tuo backend per creare la subscription Stripe.
+    // Per ora registriamo il tentativo su Firestore e mostriamo conferma.
+    const planName = document.getElementById('psum-plan').textContent;
+    const amount   = document.getElementById('psum-total').textContent;
+
+    if(db && currentUser) {
+      await db.collection('users').doc(currentUser.uid).collection('payments').add({
+        priceId: currentPriceId,
+        plan: planName,
+        amount: amount,
+        paymentMethodId: paymentMethod.id,
+        status: 'processing',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      // update user plan
+      await db.collection('users').doc(currentUser.uid).update({ plan: getPlanFromPrice(currentPriceId) });
+    }
+
+    closeM('pay-ov');
+    updateAccountPlan(planName, amount);
+    showToast(`✓ Pagamento ${amount} confermato! "${planName}" attivato.`, 'ok');
+
+  } catch(e) {
+    errEl.textContent = 'Errore nel pagamento. Riprova o contatta support@noxera.com';
+    console.error(e);
+  } finally {
+    setAuthLoading('btn-pay-stripe', false, 'Paga ora →');
+  }
+}
+
+function submitPayPal() {
+  const plan = document.getElementById('psum-plan').textContent;
+  const amount = document.getElementById('psum-total').textContent;
+  // In produzione: reindirizza a PayPal Orders API
+  window.open(`https://www.paypal.com/checkoutnow?token=NOXERA_${Date.now()}`, '_blank');
+  closeM('pay-ov');
+  showToast(`Reindirizzamento PayPal per ${amount}. Completa il pagamento nella nuova scheda.`, 'ℹ');
+}
+
+function getPlanFromPrice(priceId) {
+  if(priceId===CFG.stripe.prices.base) return 'base';
+  if(priceId===CFG.stripe.prices.premium) return 'premium';
+  if(priceId===CFG.stripe.prices.business) return 'business';
+  return 'premium';
+}
+
+function updateAccountPlan(planName, amount) {
+  const el = document.getElementById('acc-plan-name');
+  const el2 = document.getElementById('acc-plan-detail');
+  const el3 = document.getElementById('acc-plan-tag');
+  const el4 = document.getElementById('acc-plan-badge');
+  if(el) el.textContent = planName;
+  if(el2) el2.textContent = `${amount} · Rinnovo mensile automatico`;
+  if(el3) el3.textContent = `◈ ${planName}`;
+  if(el4) { el4.textContent='Attivo'; el4.className='badge badge-free'; }
+}
+
+function cancelPlan() {
+  if(!confirm('Sei sicuro di voler disdire il piano? Rimarrà attivo fino al prossimo rinnovo.')) return;
+  if(db && currentUser) db.collection('users').doc(currentUser.uid).update({plan:'free'}).catch(()=>{});
+  showToast('✓ Disdetta inviata. Il piano resta attivo fino al prossimo rinnovo.', 'ok');
+}
+
+// ═══════════════════════════════
+// ACCOUNT
+// ═══════════════════════════════
+async function saveProfile() {
+  const nome = document.getElementById('acc-nome').value.trim();
+  const cog  = document.getElementById('acc-cog').value.trim();
+  const settore = document.getElementById('acc-settore').value;
+  if(!nome) { showToast('Il nome non può essere vuoto.','err'); return; }
+  setAuthLoading('btn-save-profile', true, 'Salva modifiche');
+  try {
+    const fullName = nome + (cog?' '+cog:'');
+    if(auth.currentUser) await auth.currentUser.updateProfile({displayName: fullName});
+    if(db && currentUser) await db.collection('users').doc(currentUser.uid).update({name:fullName, settore});
+    document.getElementById('acc-name').textContent = fullName;
+    document.getElementById('nav-username').textContent = fullName;
+    document.getElementById('nav-avatar').textContent = nome.charAt(0).toUpperCase();
+    document.getElementById('acc-av').textContent = nome.charAt(0).toUpperCase();
+    showToast('✓ Profilo aggiornato con successo.', 'ok');
+  } catch(e) {
+    showToast('Errore nel salvataggio: '+e.message,'err');
+  } finally {
+    setAuthLoading('btn-save-profile', false, 'Salva modifiche');
+  }
+}
+
+async function changePassword() {
+  const pw  = document.getElementById('pw-new').value;
+  const cf  = document.getElementById('pw-cf').value;
+  const err = document.getElementById('pw-err');
+  err.textContent='';
+  if(!pw||!cf) { err.textContent='Inserisci entrambi i campi.'; return; }
+  if(pw!==cf)  { err.textContent='Le password non coincidono.'; return; }
+  if(pw.length<8){ err.textContent='Minimo 8 caratteri.'; return; }
+  try {
+    await auth.currentUser.updatePassword(pw);
+    document.getElementById('pw-new').value='';
+    document.getElementById('pw-cf').value='';
+    showToast('✓ Password aggiornata con successo.','ok');
+  } catch(e) {
+    if(e.code==='auth/requires-recent-login') {
+      err.textContent='Per sicurezza, esci e rientra prima di cambiare la password.';
+    } else { err.textContent=e.message; }
+  }
+}
+
+function doTgl(el, label) {
+  el.classList.toggle('on');
+  const on = el.classList.contains('on');
+  if(db && currentUser) {
+    db.collection('users').doc(currentUser.uid).update({
+      ['notif_'+label.replace(/\s/g,'_').toLowerCase()]: on
+    }).catch(()=>{});
+  }
+  showToast(`${on?'✓':'✕'} ${label} ${on?'attivato':'disattivato'}.`, on?'ok':'ℹ');
+}
+
+// ═══════════════════════════════
+// AI DATABASE
+// ═══════════════════════════════
+const AIS = [
+  {id:1,n:'ChatGPT',ico:'🤖',cat:'testo',s:4.8,p:'€20/mese',pr:20,b:'hot',d:'Il modello OpenAI più diffuso. GPT-4o versatile per testi, analisi, codice e immagini. Plugin ecosystem enorme con centinaia di integrazioni.',co:'OpenAI',u:'100M+',pros:['Versatilità estrema','Plugin ecosystem','GPT-4o multimodale','API potente'],cons:['Costoso piani team','Limite messaggi/ora','Privacy dati'],cases:'Copywriting, coding, analisi, customer support, ricerca.',nd:'10%',np:'€18/mese'},
+  {id:2,n:'Claude',ico:'✦',cat:'testo',s:4.7,p:'€18/mese',pr:18,b:null,d:'Modello Anthropic. Context window 200k token. Superiore per testi lunghi, analisi approfondite e ragionamento etico.',co:'Anthropic',u:'10M+',pros:['Context 200k token','Testi lunghi top','Sicurezza avanzata','Ragionamento profondo'],cons:['Meno plugin','API costosa'],cases:'Documenti, libri, analisi strategiche, code review.',nd:'5%',np:'€17.10/mese'},
+  {id:3,n:'Gemini Pro',ico:'♊',cat:'testo',s:4.5,p:'Gratis/€18',pr:18,b:'free',d:'Modello Google integrato in Workspace. Piano base gratuito generoso. Multimodale con ricerca Google live.',co:'Google',u:'50M+',pros:['G-Suite nativa','Gratis base','Multimodale','Ricerca live'],cons:['Privacy concern','Meno creativo'],cases:'Email, presentazioni, documenti Drive.',nd:'0%',np:'Gratis'},
+  {id:4,n:'Grok',ico:'𝕏',cat:'testo',s:4.3,p:'X Premium',pr:16,b:'new',d:'Modello xAI con accesso real-time a X per trend e news. Risponde senza filtri su topic sensibili.',co:'xAI',u:'5M+',pros:['Notizie real-time','Meno censure','Integrato in X'],cons:['Bias politico','Solo X Premium'],cases:'Social monitoring, news analysis, trend spotting.',nd:'0%',np:'X Premium'},
+  {id:5,n:'Midjourney',ico:'🎨',cat:'immagini',s:4.9,p:'€9.60/mese',pr:9.6,b:'hot',d:'Standard gold per immagini AI. Fotorealismo e stili artistici senza pari. Community 15M+ su Discord.',co:'Midjourney Inc.',u:'15M+',pros:['Qualità immagini #1','Stili unici','Community','Aggiornamenti freq.'],cons:['Solo Discord','No piano gratis'],cases:'Arte, advertising, concept, illustrazioni, moda.',nd:'20%',np:'€7.68/mese'},
+  {id:6,n:'DALL-E 3',ico:'🖼️',cat:'immagini',s:4.4,p:'Incluso ChatGPT',pr:0,b:null,d:'Generatore OpenAI in ChatGPT Plus. Illustrazioni precise da testo, disponibile via API.',co:'OpenAI',u:'20M+',pros:['Integrato in GPT','API disponibile','Prompt precisi'],cons:['Stile generico','Limite/giorno'],cases:'Illustrazioni, thumbnail, content marketing.',nd:'10%',np:'Incluso ChatGPT'},
+  {id:7,n:'Adobe Firefly',ico:'🔥',cat:'immagini',s:4.5,p:'Incluso CC',pr:40,b:null,d:'Suite AI Adobe in Photoshop e Illustrator. Copyright-safe, qualità professionale.',co:'Adobe',u:'30M+',pros:['Integra Adobe','Copyright-safe','Generative Fill','Qualità pro'],cons:['Solo Creative Cloud','Crediti limitati'],cases:'Editing pro, compositing, design grafico.',nd:'5%',np:'Incluso CC'},
+  {id:8,n:'Stable Diffusion',ico:'🌀',cat:'immagini',s:4.3,p:'Gratis',pr:0,b:'free',d:'Open-source leader installabile in locale. Zero costi, privacy totale, migliaia di modelli.',co:'Stability AI',u:'Milioni',pros:['100% gratis','Open source','Privacy totale'],cons:['Richiede GPU','Setup complesso'],cases:'Arte digitale, batch generation.',nd:'0%',np:'Gratis'},
+  {id:9,n:'Runway ML',ico:'🎬',cat:'video',s:4.7,p:'€35/mese',pr:35,b:'hot',d:'Leader nel video AI professionale. Gen-3 Alpha produce video cinema-grade con editing avanzato.',co:'Runway AI',u:'3M+',pros:['Video AI #1','Suite editing','Aggiornamenti mensili'],cons:['Costoso','Render lento'],cases:'Reels, pubblicità, effetti speciali.',nd:'15%',np:'€29.75/mese'},
+  {id:10,n:'Sora',ico:'🎥',cat:'video',s:4.6,p:'ChatGPT Pro',pr:80,b:'new',d:'Modello video OpenAI con fisica realistica. Video fino a 60 secondi qualità cinema.',co:'OpenAI',u:'1M+',pros:['Fisica realistica','Video lunghi','Qualità cinema'],cons:['Solo ChatGPT Pro €80','Generazioni limitate'],cases:'Spot, video musicali.',nd:'0%',np:'Incluso ChatGPT Pro'},
+  {id:11,n:'HeyGen',ico:'🎭',cat:'video',s:4.5,p:'€24/mese',pr:24,b:null,d:'Video con avatar AI e voice clone. 230+ avatar, 140+ lingue. Standard e-learning.',co:'HeyGen',u:'500k+',pros:['Avatar AI realistico','140 lingue','No studio'],cons:['Costoso'],cases:'Video aziendali, training.',nd:'10%',np:'€21.60/mese'},
+  {id:12,n:'GitHub Copilot',ico:'💻',cat:'codice',s:4.6,p:'€10/mese',pr:10,b:null,d:'Assistente AI per sviluppatori in VS Code, JetBrains. Autocompletamento intelligente.',co:'GitHub/Microsoft',u:'1.3M+',pros:['Integrazione IDE','Multi-linguaggio','Autocompletamento preciso'],cons:['Privacy codice'],cases:'Web dev, backend, scripting.',nd:'5%',np:'€9.50/mese'},
+  {id:13,n:'Cursor',ico:'⌨️',cat:'codice',s:4.7,p:'€19/mese',pr:19,b:'new',d:'IDE AI-native che comprende intere codebase. Refactoring automatico, chat con il codice.',co:'Anysphere',u:'500k+',pros:['IDE AI-native','Context intera codebase','Refactoring auto'],cons:['Relativamente nuovo'],cases:'Full-stack dev, architettura.',nd:'5%',np:'€18.05/mese'},
+  {id:14,n:'Suno AI',ico:'🎵',cat:'audio',s:4.5,p:'€7/mese',pr:7,b:'hot',d:'Piattaforma #1 musica AI. Da prompt a brano completo in 30 secondi. Tutti i generi.',co:'Suno',u:'5M+',pros:['Qualità audio','Tutti i generi','Velocissimo'],cons:['Diritti incerti'],cases:'Jingle, colonne sonore, podcast.',nd:'8%',np:'€6.44/mese'},
+  {id:15,n:'ElevenLabs',ico:'🔊',cat:'audio',s:4.8,p:'€11/mese',pr:11,b:null,d:'Leader nel voice cloning. Clona una voce da 1 minuto. 2900+ voci in 29 lingue.',co:'ElevenLabs',u:'1M+',pros:['Voice cloning #1','2900+ voci','29 lingue'],cons:['Costoso piani avanzati'],cases:'Audiolibri, podcast, doppiaggio.',nd:'10%',np:'€9.90/mese'},
+  {id:16,n:'Perplexity',ico:'🔍',cat:'business',s:4.4,p:'Gratis/€17',pr:17,b:'free',d:'Motore ricerca AI con fonti citate real-time. Ricerca web, Reddit, accademici.',co:'Perplexity AI',u:'15M+',pros:['Fonti citate','Ricerca live','Piano gratis'],cons:['Non crea contenuti'],cases:'Ricerca, fact-checking, analisi competitiva.',nd:'10%',np:'Gratis/€15.30'},
+  {id:17,n:'Notion AI',ico:'📝',cat:'business',s:4.2,p:'+€8/mese',pr:8,b:null,d:'Add-on AI per Notion. Riassume pagine, genera contenuti, risponde su documenti.',co:'Notion',u:'30M workspace',pros:['Integra Notion perfettamente','Riassunti veloci'],cons:['Solo in Notion'],cases:'Knowledge base, note, project management.',nd:'5%',np:'+€7.60/mese'},
+  {id:18,n:'Zapier AI',ico:'⚡',cat:'business',s:4.2,p:'€20/mese',pr:20,b:null,d:'Automazione no-code con AI. Collega 6000+ app con linguaggio naturale.',co:'Zapier',u:'2.2M+',pros:['6000+ integrazioni','No-code','Reliability alta'],cons:['Costoso piani avanzati'],cases:'Automazione business, CRM sync.',nd:'10%',np:'€17.99/mese'},
+  {id:19,n:'DeepL',ico:'🌍',cat:'testo',s:4.6,p:'Gratis/€7.49',pr:7.49,b:'free',d:'Traduzione AI più precisa del mercato. 31 lingue, documenti, GDPR europeo.',co:'DeepL GmbH',u:'10M+',pros:['Traduzione #1','GDPR EU','31 lingue'],cons:['Limiti free'],cases:'Traduzione professionale, localizzazione.',nd:'5%',np:'Gratis/€7.12'},
+  {id:20,n:'Canva AI',ico:'🎯',cat:'immagini',s:4.3,p:'€14/mese',pr:14,b:null,d:'Suite design con AI. Magic Design, Text to Image. Il più accessibile per non-designer.',co:'Canva',u:'175M+',pros:['Facilissimo','Suite completa','170M+ template'],cons:['Meno pro'],cases:'Social media, presentazioni, poster.',nd:'5%',np:'€13.29/mese'},
+  {id:21,n:'Make',ico:'🔗',cat:'business',s:4.3,p:'Gratis/€9',pr:9,b:'free',d:'Automazione visuale avanzata. Più potente di Zapier. 2000+ app.',co:'Make',u:'500k+',pros:['Piano free generoso','Più flessibile di Zapier'],cons:['Curva apprendimento'],cases:'Automazione avanzata, API custom.',nd:'5%',np:'Gratis/€8.55'},
+  {id:22,n:'Grammarly',ico:'📐',cat:'testo',s:4.3,p:'Gratis/€12',pr:12,b:'free',d:'Correttore AI top. Tone detection, riscrittura, scrittura assistita. Estensione ovunque.',co:'Grammarly',u:'30M+',pros:['Integrazione ovunque','Tone detection','Piano free'],cons:['Meno utile in italiano'],cases:'Email, documenti, editing.',nd:'5%',np:'Gratis/€11.40'},
+  {id:23,n:'Jasper AI',ico:'✍️',cat:'business',s:4.0,p:'€39/mese',pr:39,b:null,d:'Enterprise copywriting. Templates per email, ads, landing page. Brand voice training.',co:'Jasper',u:'100k+',pros:['Templates marketing','Brand voice training','Integra Surfer SEO'],cons:['Costoso','Risposte generiche'],cases:'Marketing team, agenzie.',nd:'15%',np:'€33.15/mese'},
+  {id:24,n:'Descript',ico:'🎙️',cat:'video',s:4.2,p:'€12/mese',pr:12,b:null,d:'Editor video rivoluzionario: edita modificando il testo trascritto. Filler words removal.',co:'Descript',u:'500k+',pros:['Editing via testo','Filler removal auto'],cons:['Export lento'],cases:'Podcast, YouTube, webinar.',nd:'8%',np:'€11.04/mese'},
+  {id:25,n:'Midjourney Niji',ico:'🌸',cat:'immagini',s:4.4,p:'€9.60/mese',pr:9.6,b:null,d:'Versione Midjourney specializzata in stile anime/manga. Qualità professionale.',co:'Midjourney Inc.',u:'2M+',pros:['Anime/manga #1','Incluso in Midjourney','Coerenza personaggi'],cons:['Solo stile anime'],cases:'Manga, webtoon, character design.',nd:'20%',np:'€7.68/mese'},
+  {id:26,n:'Udio',ico:'🎶',cat:'audio',s:4.3,p:'€8/mese',pr:8,b:'new',d:'Alternativa a Suno con maggiore controllo struttura musicale. Migliore per produzioni strutturate.',co:'Udio',u:'1M+',pros:['Struttura musicale top','Controllo avanzato'],cons:['UI meno intuitiva'],cases:'Produzione musicale strutturata.',nd:'5%',np:'€7.60/mese'},
+  {id:27,n:'Synthesia',ico:'📹',cat:'video',s:4.3,p:'€22/mese',pr:22,b:null,d:'Video con avatar AI. 230+ avatar, 140+ lingue. Standard e-learning aziendale.',co:'Synthesia',u:'50k aziende',pros:['230+ avatar','No studio','140 lingue'],cons:['Avatar rigidi','Limitato creativo'],cases:'E-learning, onboarding, video prodotto.',nd:'10%',np:'€19.80/mese'},
+  {id:28,n:'Character.ai',ico:'🎭',cat:'testo',s:4.0,p:'Gratis/€10',pr:10,b:'free',d:'Conversazione con personaggi AI. Roleplay avanzato, 20M+ utenti giornalieri.',co:'Character.ai',u:'20M DAU',pros:['Personaggi custom','Community','Gratis base'],cons:['Non professionale'],cases:'Intrattenimento, pratica lingue.',nd:'0%',np:'Gratis/€9.99'},
+  {id:29,n:'Kling AI',ico:'🎞️',cat:'video',s:4.4,p:'€15/mese',pr:15,b:'new',d:'Modello video Kuaishou. Eccellente per animare immagini statiche con movimenti fluidi.',co:'Kuaishou',u:'2M+',pros:['Animazione immagini top','Prezzo competitivo'],cons:['Privacy limitata'],cases:'Animazione personaggi, video social.',nd:'10%',np:'€13.50/mese'},
+  {id:30,n:'Mistral AI',ico:'🌪️',cat:'testo',s:4.1,p:'Gratis/API',pr:0,b:'free',d:'Modelli open-weight europei. GDPR europea, server Francia. Mixtral eccellente.',co:'Mistral AI',u:'500k dev',pros:['GDPR europeo','Open-weight','Costi API bassi'],cons:['Meno capability dei top'],cases:'Aziende EU compliance, sviluppatori.',nd:'0%',np:'Pay per token'},
+];
+
+const CATS=['Tutti','testo','immagini','video','codice','audio','business'];
+let cmpList=[], activeF='Tutti';
+
+function renderDir() {
+  const pp = document.getElementById('fpills');
+  if(!pp.children.length) {
+    CATS.forEach(c=>{
+      const b = document.createElement('button');
+      b.className = 'fpill'+(c==='Tutti'?' on':'');
+      b.textContent = c==='Tutti'?'Tutti':c.charAt(0).toUpperCase()+c.slice(1);
+      b.onclick = ()=>{ document.querySelectorAll('.fpill').forEach(x=>x.classList.remove('on')); b.classList.add('on'); activeF=c; renderDir(); };
+      pp.appendChild(b);
+    });
+  }
+  const q = (document.getElementById('dir-q')?.value||'').toLowerCase();
+  let data = AIS;
+  if(activeF!=='Tutti') data = data.filter(a=>a.cat===activeF);
+  if(q) data = data.filter(a=>a.n.toLowerCase().includes(q)||a.d.toLowerCase().includes(q)||a.cat.includes(q));
+  data = [...data].sort((a,b)=>b.s-a.s);
+  document.getElementById('ai-count').textContent = `${data.length} strumenti AI trovati`;
+  const bHtml=a=>{
+    if(a.b==='hot')return'<span class="badge badge-hot">🔥 Trend</span>';
+    if(a.b==='new')return'<span class="badge badge-new">Nuovo</span>';
+    if(a.b==='free')return'<span class="badge badge-free">Gratis</span>';
+    return'';
+  };
+  document.getElementById('ai-grid').innerHTML = data.map(a=>`
+    <div class="ai-card">
+      <div class="aic-top"><div class="aic-ico">${a.ico}</div><div class="aic-badges">${bHtml(a)}</div></div>
+      <div class="aic-name">${a.n}</div>
+      <div class="aic-cat">${a.cat} · ${a.co}</div>
+      <div class="aic-desc">${a.d.substring(0,100)}...</div>
+      <div class="aic-pc">
+        ${a.pros.slice(0,2).map(p=>`<div class="pc pro"><span class="ps">✓</span>${p}</div>`).join('')}
+        ${a.cons.slice(0,2).map(c=>`<div class="pc con"><span class="ps">✗</span>${c}</div>`).join('')}
+      </div>
+      <div class="aic-foot">
+        <div style="display:flex;align-items:center"><span class="stars">${'★'.repeat(Math.round(a.s))}</span><span class="score">${a.s}</span></div>
+        <div class="aic-price">Da <b>${a.p}</b></div>
+      </div>
+      <div class="aic-btns">
+        <button class="acb" onclick="openDetail(${a.id})">Dettagli</button>
+        <button class="acb add" onclick="addFromDir(${a.id})">+ Portfolio</button>
+        <button class="acb cmp ${cmpList.includes(a.id)?'sel':''}" id="cmp-${a.id}" onclick="toggleCmp(${a.id})">Confronta</button>
+      </div>
+    </div>`).join('');
+}
+
+function addFromDir(id) {
+  const a = AIS.find(x=>x.id===id);
+  if(!currentUser) { showToast('Accedi per aggiungere al portafoglio.','ℹ'); openM('auth-ov'); return; }
+  if(userSubs.find(s=>s.name===a.n)) { showToast(`${a.n} è già nel portafoglio.`,'ℹ'); return; }
+  const sub = { name:a.n, ico:a.ico, plan:a.cat+' · '+a.co, price:a.pr||0, disc:a.nd!=='0%'?'−'+a.nd:'—', renew:'1 gen' };
+  if(currentUser) saveSubToFirestore(sub).then(fid=>{ sub.firestoreId=fid; });
+  userSubs.push({...sub, id:Date.now()});
+  renderWallet();
+  showToast(`✓ ${a.n} aggiunto al portafoglio! Prezzo Noxera: ${a.np}`,'ok');
+}
+
+function openDetail(id) {
+  const a = AIS.find(x=>x.id===id);
+  document.getElementById('detail-body').innerHTML = `
+    <div class="d-head">
+      <div class="d-ico">${a.ico}</div>
+      <div><div class="d-name">${a.n}</div><div class="d-cat">${a.cat} · ${a.co} · ${a.u} utenti</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+          ${a.b==='hot'?'<span class="badge badge-hot">🔥 Trend</span>':a.b==='new'?'<span class="badge badge-new">Nuovo</span>':a.b==='free'?'<span class="badge badge-free">Gratis</span>':''}
+          <span class="badge" style="background:var(--bdim);color:var(--blue2);border:1px solid var(--border2)">${a.u} utenti</span>
+        </div>
+      </div>
+    </div>
+    <div class="d-body">
+      <div>
+        <div class="d-desc">${a.d}</div>
+        <div class="d-sec">Casi d'uso principali</div>
+        <div class="d-feats">${a.cases.split(',').map(c=>`<div class="d-feat">${c.trim()}</div>`).join('')}</div>
+        <div class="d-sec">Pro e Contro</div>
+        <div class="d-pc">
+          ${a.pros.map(p=>`<div class="d-pc-item pro">✓ ${p}</div>`).join('')}
+          ${a.cons.map(c=>`<div class="d-pc-item con">✗ ${c}</div>`).join('')}
+        </div>
+      </div>
+      <div>
+        <div class="d-price"><div class="dp-lbl">Prezzo standard</div><div class="dp-price">${a.p}</div>${a.nd!=='0%'?`<div class="dp-noxera">◈ Con Noxera: ${a.np} (−${a.nd})</div>`:''}</div>
+        <button class="btn btn-primary btn-full" onclick="addFromDir(${a.id});closeM('detail-ov')">+ Aggiungi al portafoglio</button>
+        <button class="btn btn-cyan btn-full mt4" onclick="closeM('detail-ov');requireAuthThen(()=>openPay('${a.n} via Noxera','${a.n}','${a.p}','${a.np}','${CFG.stripe.prices.premium}'))">Acquista con Noxera →</button>
+      </div>
+    </div>`;
+  openM('detail-ov');
+}
+
+function toggleCmp(id) {
+  if(cmpList.includes(id)) cmpList=cmpList.filter(x=>x!==id);
+  else { if(cmpList.length>=3){showToast('Massimo 3 AI da confrontare.','ℹ');return;} cmpList.push(id); }
+  document.getElementById('cmp-'+id)?.classList.toggle('sel',cmpList.includes(id));
+  updateCmpBar();
+}
+function updateCmpBar() {
+  const bar = document.getElementById('cmp-bar');
+  if(!cmpList.length){bar.classList.remove('show');return;}
+  bar.classList.add('show');
+  document.getElementById('cmp-slots').innerHTML = cmpList.map(id=>{const a=AIS.find(x=>x.id===id);return`<div class="cslot filled">${a.ico} ${a.n}</div>`;}).join('')+(cmpList.length<3?'<div class="cslot">+</div>':'');
+}
+function clearCmp() { cmpList=[]; document.querySelectorAll('.acb.cmp').forEach(b=>b.classList.remove('sel')); document.getElementById('cmp-bar').classList.remove('show'); }
+function openCompare() {
+  if(cmpList.length<2){showToast('Seleziona almeno 2 AI da confrontare.','ℹ');return;}
+  const ais = cmpList.map(id=>AIS.find(a=>a.id===id));
+  const maxS = Math.max(...ais.map(a=>a.s));
+  const rows=[['Punteggio',...ais.map(a=>a.s)],['Prezzo',...ais.map(a=>a.p)],['Prezzo Noxera',...ais.map(a=>a.np)],['Sconto Noxera',...ais.map(a=>a.nd)],['Utenti',...ais.map(a=>a.u)],['Pro principali',...ais.map(a=>a.pros.slice(0,2).join(', '))],['Svantaggi',...ais.map(a=>a.cons.join(', '))]];
+  document.getElementById('cmp-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(${ais.length},1fr);gap:14px;margin-bottom:16px">
+      ${ais.map(a=>`<div style="text-align:center;padding-bottom:14px;border-bottom:1px solid var(--border)"><div style="font-size:26px;margin-bottom:5px">${a.ico}</div><div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--white)">${a.n}</div><div style="color:var(--amber);font-size:12px;margin-top:4px">${'★'.repeat(Math.round(a.s))} ${a.s}</div></div>`).join('')}
+    </div>
+    <table style="width:100%;border-collapse:collapse">
+      ${rows.map(r=>`<tr style="border-bottom:1px solid var(--border)"><td style="padding:11px 8px;font-size:11px;color:var(--w4);text-transform:uppercase;letter-spacing:.8px;width:120px">${r[0]}</td>${r.slice(1).map((v,i)=>`<td style="padding:11px 8px;font-size:13px;text-align:center;color:${ais[i].s===maxS&&r[0]==='Punteggio'?'var(--cyan)':'var(--w2)'};font-weight:${ais[i].s===maxS&&r[0]==='Punteggio'?'700':'400'}">${v}</td>`).join('')}</tr>`).join('')}
+    </table>
+    <div style="display:flex;gap:10px;margin-top:20px">${ais.map(a=>`<button class="btn btn-cyan btn-sm" onclick="addFromDir(${a.id})">+ ${a.n}</button>`).join('')}</div>`;
+  openM('cmp-ov');
+}
+
+// ═══════════════════════════════
+// ADVISOR
+// ═══════════════════════════════
+const ADV={
+  designer:`Per un designer nel 2025:\n\n**1. Midjourney** (€7.68/mese con Noxera, −20%) — immagini e concept visivi top.\n**2. Adobe Firefly** (incluso CC) — editing AI nativo in Photoshop.\n**3. Kling AI** (€13.50/mese) — anima le illustrazioni in video.\n**4. Canva AI** (€13.29/mese) — workflow veloci per clienti.\n\nBundle Design Noxera: €42/mese invece di €54.`,
+  social:`Per creator di contenuti social:\n\n**1. ChatGPT Plus** (€18/mese) — caption, hashtag, piani editoriali.\n**2. Midjourney** (€7.68/mese, −20%) — immagini per post e storie.\n**3. Runway ML** (€29.75/mese, −15%) — Reels e TikTok AI.\n**4. Suno AI** (€6.44/mese, −8%) — musica originale per video.\n\nBundle Creator Noxera: €61.87/mese invece di €73.60.`,
+  marketing:`Per il marketing digitale:\n\n**1. ChatGPT Plus** (€18/mese) — copy, email, landing page.\n**2. Perplexity Pro** (€15.30/mese) — ricerca competitor live.\n**3. Jasper AI** (€33.15/mese, −15%) — copy marketing scalabile.\n**4. Zapier AI** (€17.99/mese) — automazione campagne.\n\nConsiglio: se hai ChatGPT, Jasper può essere ridondante. Risparmieresti €33/mese.`,
+  sviluppatore:`Stack definitivo per sviluppatori:\n\n**1. Cursor** (€18.05/mese) — IDE AI-native rivoluzionario.\n**2. GitHub Copilot** (€9.50/mese) — autocompletamento in ogni IDE.\n**3. Claude Pro** (€17.10/mese) — debugging su contesti enormi.\n**4. Perplexity Pro** (€15.30/mese) — documentazione live.\n\nBundle Dev Noxera: €57/mese invece di €64.`,
+  ecommerce:`Per e-commerce:\n\n**1. ChatGPT Plus** (€18/mese) — schede prodotto, SEO, email auto.\n**2. Midjourney** (€7.68/mese) — foto prodotto e banner.\n**3. ElevenLabs** (€9.90/mese) — voiceover in 40 lingue.\n**4. Zapier AI** (€17.99/mese) — automazione ordini e CRM.\n\nROI: 25h/settimana di lavoro risparmiato.`,
+  copywriting:`Per copywriter professionisti:\n\n**1. Claude Pro** (€17.10/mese) — testi lunghi e coerenti.\n**2. ChatGPT Plus** (€18/mese) — varianti rapide e brainstorming.\n**3. Perplexity Pro** (€15.30/mese) — ricerca fonti live.\n**4. Grammarly** (€11.40/mese) — editing finale e tono.\n\nClaudevsGPT: Claude per long-form, GPT per social.`,
+  youtube:`Per YouTuber e video creator:\n\n**1. Runway ML** (€29.75/mese) — effetti e editing AI.\n**2. ElevenLabs** (€9.90/mese) — voice over multilingue.\n**3. Descript** (€11.04/mese) — edita il video modificando il testo.\n**4. Suno AI** (€6.44/mese) — musica copyright-free.\n\nTotale Noxera: €57/mese invece di €72.`,
+  musica:`Per musicisti e producer:\n\n**1. Suno AI** (€6.44/mese) — brani completi da prompt.\n**2. Udio** (€7.60/mese) — strutture musicali complesse.\n**3. ElevenLabs** (€9.90/mese) — voice clone personalizzato.\n**4. Runway ML** (€29.75/mese) — video musicali AI.\n\nBundle Musica Noxera: €50/mese invece di €62.`,
+};
+
+function doChip(el) {
+  const t=el.textContent; addMsg(t,'user');
+  document.getElementById('chat-chips').style.display='none';
+  const k=t.includes('designer')?'designer':t.includes('social')?'social':t.includes('marketing')?'marketing':t.includes('sviluppatore')?'sviluppatore':t.includes('e-commerce')?'ecommerce':t.includes('copy')?'copywriting':t.includes('YouTube')?'youtube':'musica';
+  setTimeout(()=>addMsg(ADV[k],'ai'),900);
+}
+function sendChat() {
+  const inp=document.getElementById('chat-inp');
+  const t=inp.value.trim(); if(!t) return;
+  addMsg(t,'user'); inp.value='';
+  document.getElementById('chat-chips').style.display='none';
+  const lo=t.toLowerCase();
+  let r;
+  if(lo.includes('design'))r=ADV.designer;
+  else if(lo.includes('social')||lo.includes('instagram')||lo.includes('tiktok'))r=ADV.social;
+  else if(lo.includes('market'))r=ADV.marketing;
+  else if(lo.includes('cod')||lo.includes('svilupp'))r=ADV.sviluppatore;
+  else if(lo.includes('commerc')||lo.includes('shop'))r=ADV.ecommerce;
+  else if(lo.includes('scri')||lo.includes('copy'))r=ADV.copywriting;
+  else if(lo.includes('video')||lo.includes('youtube'))r=ADV.youtube;
+  else if(lo.includes('music')||lo.includes('brano'))r=ADV.musica;
+  else r=`Per costruire il tuo stack ottimale dimmi:\n\n**1.** Qual è il tuo obiettivo principale: creare contenuti, automatizzare o analizzare?\n**2.** Quali tool AI usi già?\n**3.** Qual è il tuo budget mensile massimo?\n\nCon queste info costruisco uno stack preciso con i prezzi Noxera.`;
+  setTimeout(()=>addMsg(r,'ai'),900);
+}
+function addMsg(text,role){
+  const c=document.getElementById('chat-msgs');
+  const d=document.createElement('div');
+  d.className=`cmsg ${role}`;
+  if(role==='ai'){
+    d.innerHTML=`<div class="cmsg-av ai">🧠</div><div class="cmsg-bub"><div class="typing"><span></span><span></span><span></span></div></div>`;
+    c.appendChild(d); c.scrollTop=c.scrollHeight;
+    setTimeout(()=>{d.querySelector('.cmsg-bub').innerHTML=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>'); c.scrollTop=c.scrollHeight;},700);
+  } else {
+    d.innerHTML=`<div class="cmsg-av user">👤</div><div class="cmsg-bub">${text}</div>`;
+    c.appendChild(d); c.scrollTop=c.scrollHeight;
+  }
+}
+
+// ═══════════════════════════════
+// TICKER
+// ═══════════════════════════════
+const tickItems=AIS.slice(0,16).map(a=>`<div class="tick-item"><span>${a.ico}</span>${a.n}<span class="tick-sep">·</span>${a.s}★</div>`);
+document.getElementById('ticker').innerHTML=[...tickItems,...tickItems].join('');
+
+// ═══════════════════════════════
+// SCROLL REVEAL
+// ═══════════════════════════════
+function observeReveal() {
+  const obs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in');}),{threshold:.08});
+  document.querySelectorAll('.reveal:not(.in)').forEach(el=>obs.observe(el));
+}
+observeReveal();
+</script>
+</body>
+</html>
